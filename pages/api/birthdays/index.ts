@@ -12,7 +12,6 @@ export const config = {
 }
 
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
-  console.log(req.body.name)
   const createdBirthday = await prisma.birthday.create({
     data: {
       person: req.body.name,
