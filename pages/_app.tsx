@@ -2,6 +2,7 @@ import 'sanitize.css';
 import { Grommet, ThemeType, Header, Text } from 'grommet';
 import Head from 'next/head';
 import Link from 'next/link';
+import { SWRConfig } from 'swr';
 
 const theme: ThemeType = {
   global: {
@@ -109,7 +110,11 @@ function App({ Component, pageProps }) {
           </a>
         </Link>
       </Header>
-      <Component {...pageProps} />
+      <SWRConfig value={{
+        fetcher: (url, options) => fetch(url, options).then(r => r.json())
+      }}>
+        <Component {...pageProps} />
+      </SWRConfig>
     </Grommet>
   )
 }

@@ -2,6 +2,10 @@ import { Box, Text, CheckBox, Header } from "grommet";
 import { useMemo } from "react";
 
 const ContributorsList = ({ contributors, onChange }) => {
+  if (!contributors?.length) {
+    return null;
+  }
+
   const hasContributed = useMemo(() => contributors.filter(c => c.hasContributed), [contributors]);
 
   return (

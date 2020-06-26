@@ -2,7 +2,7 @@ import { Box, Header, Anchor, Text } from "grommet";
 import { Like, Dislike } from "grommet-icons";
 
 const GiftsList = ({ gifts, myLikes, myDislikes, onLike, onDislike }) => {
-  if (!gifts.length) {
+  if (!gifts?.length) {
     return null;
   }
 

@@ -22,7 +22,7 @@ export default function Home() {
       }
     }).then(r => r.json());
 
-    console.log(birthday)
+    Router.push(`/birthday/${birthday.id}`);
   }, [name])
 
   return (

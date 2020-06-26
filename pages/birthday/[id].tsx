@@ -47,16 +47,15 @@ const initialNewGift = { title: '', author: 'a.santos@kigroup.de', link: '' }
 
 
 const GiftPage = () => {
-  const router = useRouter();
-  const { data, error } = useSWR(`/api/birthdays/${router.query.id}`);
+  const { query } = useRouter();
+  const { data: birthday, error } = useSWR(() => query.id ? `/api/birthdays/${query.id}` : null);
   const [copied, setCopied] = useState(false);
-  const [contributors, setContributors] = useState(initialContributors);
-  const [gifts, setGifts] = useState(initialGifts);
   const [newGift, setNewGift] = useState(initialNewGift)
   const [likes, setLikes] = useState(myLikes);
   const [dislikes, setDislikes] = useState(myDislikes);
 
-  console.log(data);
+  const onChangeContributors = (contributors) => { }
+  const onChangeGifts = (gift) => { }
 
   return (
     <Main pad={{ bottom: "100px" }} overflow="scroll">
@@ -75,7 +74,7 @@ const GiftPage = () => {
         direction="row"
         justify="between"
       >
-        <Text weight="bold">Happy birthday to {router.query.id}!</Text>
+        <Text weight="bold">Happy birthday to {birthday?.person}!</Text>
         <ShareOption onClick={() => {
           copy(window.location.href)
           setCopied(true);
@@ -90,19 +89,19 @@ const GiftPage = () => {
           <TextInput placeholder="Insert gift link" onChange={e => setNewGift({ ...newGift, link: e.target.value })} value={newGift.link} />
         </FormField>
         <Button margin={{ top: "small" }} onClick={() => {
-          setGifts(gifts.concat(newGift));
+          onChangeGifts(newGift);
           setNewGift(initialNewGift);
         }}>
           Add
         </Button>
       </Box>
       <GiftsList
-        gifts={gifts}
+        gifts={birthday?.gifts}
         onLike={(gift) => setLikes(likes.concat(gift.link))}
         onDislike={(gift) => setDislikes(dislikes.concat(gift.link))}
         myDislikes={dislikes}
         myLikes={likes} />
-      <ContributorsList contributors={contributors} onChange={(newContributors) => setContributors(newContributors)} />
+      <ContributorsList contributors={birthday?.contributors} onChange={onChangeContributors} />
       <Box style={{ zIndex: 0 }}>
         <Box
           direction="row"
