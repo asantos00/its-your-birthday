@@ -9,10 +9,22 @@ import {
   Button,
 } from "grommet";
 import Router from "next/router";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export default function Home() {
   const [name, setName] = useState("");
+  const createBirthday = useCallback(async () => {
+    const birthday = await fetch('/api/birthdays', {
+      method: 'post',
+      body: JSON.stringify({ name }),
+      headers: {
+        'content-type': "application/json"
+      }
+    }).then(r => r.json());
+
+    console.log(birthday)
+  }, [name])
+
   return (
     <Main pad="large" height="100vh !important">
       <Box pad="large">
@@ -31,7 +43,7 @@ export default function Home() {
           />
         </FormField>
         <Button
-          onClick={() => Router.push(`/gift/${name}`)}
+          onClick={createBirthday}
           margin={{ top: "medium" }}
           size="medium"
           label="Hurray!"
