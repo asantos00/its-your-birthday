@@ -1,6 +1,6 @@
 FROM node:12-buster
 
-COPY package* .
+COPY package* ./
 RUN npm install
 
 COPY . .

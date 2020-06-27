@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: its-your-birthday-server
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 4
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: iybd
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: iybd
+    spec:
+      containers:
+        image: >-
+          core.harbor.eu1.ext.systems/its-your-birthday-64d67/its-your-birthday:0.0.1
+        imagePullPolicy: Always
+        name: next
+        ports:
+          - containerPort: 3000
+            name: exposed
+            protocol: TCP
+        resources: {}
+        securityContext:
+          runAsGroup: 1001
+          runAsNonRoot: true
+          runAsUser: 1001
