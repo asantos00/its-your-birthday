@@ -38,9 +38,9 @@ const GiftPage = ({ cookieContributorId }) => {
   useEffect(() => {
     const date = new Date();
     date.setMonth(date.getMonth() + 1);
-    let cookieValue = `contributorId=${myContributorId}; expires=${date.toUTCString()}; path=/`;
+    let cookieValue = `contributorId=${myContributorId};expires=${date.toUTCString()};path=/birthday/${birthday?.id}`;
     document.cookie = cookieValue;
-  }, [myContributorId]);
+  }, [myContributorId, birthday?.id]);
 
   const onChangeContributors = async (contributor: Contributor) => {
     await fetch(`/api/birthdays/${birthday?.id}/contributors/${contributor.id}/hasPaid`, {
