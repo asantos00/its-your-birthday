@@ -1,7 +1,7 @@
 import { Box, Text, CheckBox, Header } from "grommet";
 import { useMemo } from "react";
 
-const ContributorsList = ({ contributors, onChange, listRef }) => {
+const ContributorsList = ({ contributors, myContributorId, onChange, listRef }) => {
   if (!contributors?.length) {
     return null;
   }
@@ -16,9 +16,13 @@ const ContributorsList = ({ contributors, onChange, listRef }) => {
       </Header>
       <Box ref={listRef} pad="large">
         {contributors.map(contributor => (
-          <Box key={contributor.name} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
+          <Box key={contributor.id} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
             <Box basis="70%" flex="grow">
-              <Text>{contributor.name}</Text>
+              <Text
+                color={myContributorId === contributor.id ? 'brand' : ''}
+              >
+                {contributor.name}
+              </Text>
             </Box>
             <Box basis="5%" margin={{ horizontal: "medium" }}>
               <CheckBox

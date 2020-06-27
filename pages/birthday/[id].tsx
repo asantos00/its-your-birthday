@@ -9,30 +9,36 @@ import {
 } from "grommet"
 import useSWR from 'swr';
 import { ShareOption, Add } from 'grommet-icons';
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import copy from 'copy-to-clipboard';
 import GiftsList, { GiftsWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
 import { Birthday, Contributor, Gift } from '@prisma/client'
+import cookies from 'next-cookies'
 
-const MOCKED_OWN_COLLABORATOR_ID = 1;
-
-
-const initialNewGift = { description: '', author: 'a.santos@kigroup.de', url: '' }
+const initialNewGift = { description: '', url: '' }
 
 interface BirthdayWithContributorsAndGifts extends Birthday {
   contributors?: Contributor[],
   gifts?: GiftsWithUpvotes[]
 }
 
-const GiftPage = () => {
+const GiftPage = ({ cookieContributorId }) => {
   const contributorsListRef = useRef<HTMLElement>(null);
+  const [myContributorId, setMyContributorId] = useState(cookieContributorId);
   const { query } = useRouter();
-  const { data: birthday, isValidating: isLoading, mutate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
+  const { data: birthday, mutate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
   const [copied, setCopied] = useState(false);
   const [newGift, setNewGift] = useState(initialNewGift)
   const [myName, setMyName] = useState('')
+
+  useEffect(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 1);
+    let cookieValue = `contributorId=${myContributorId}; expires=${date.toUTCString()}; path=/`;
+    document.cookie = cookieValue;
+  }, [myContributorId]);
 
   const onChangeContributors = async (contributor: Contributor) => {
     await fetch(`/api/birthdays/${birthday?.id}/contributors/${contributor.id}/hasPaid`, {
@@ -72,6 +78,7 @@ const GiftPage = () => {
       }
     }).then(r => r.json())
       .then(contributor => {
+        setMyContributorId(contributor.id);
         setMyName('');
         mutate({
           ...birthday,
@@ -88,7 +95,7 @@ const GiftPage = () => {
   const onUpvoteChange = async (gift: Gift, isUpvoted) => {
     fetch(`/api/birthdays/${birthday.id}/gifts/${gift.id}/upvotedBy`, {
       method: 'PATCH',
-      body: JSON.stringify({ contributorId: MOCKED_OWN_COLLABORATOR_ID, isUpvoted }),
+      body: JSON.stringify({ contributorId: myContributorId, isUpvoted }),
       headers: {
         'content-type': "application/json"
       }
@@ -105,7 +112,11 @@ const GiftPage = () => {
   }
 
   if (!birthday) {
-    return <Text size="large" margin="medium">Loading...</Text>
+    return (
+      <Box width="100%" height="100%" align="center" justify="center">
+        <Text size="large" margin="medium">Loading...</Text>
+      </Box>
+    )
   }
 
   return (
@@ -149,9 +160,12 @@ const GiftPage = () => {
       <GiftsList
         gifts={birthday?.gifts}
         onUpvoteChange={onUpvoteChange}
-        collaboratorId={MOCKED_OWN_COLLABORATOR_ID}
+        collaboratorId={myContributorId}
       />
-      <ContributorsList listRef={contributorsListRef} contributors={birthday?.contributors} onChange={onChangeContributors} />
+      <ContributorsList
+        myContributorId={myContributorId}
+        listRef={contributorsListRef} contributors={birthday?.contributors}
+        onChange={onChangeContributors} />
       <Box style={{ zIndex: 0 }}>
         <Box
           direction="row"
@@ -176,5 +190,11 @@ const GiftPage = () => {
     </Main >
   )
 }
+
+GiftPage.getInitialProps = async (ctx) => {
+  return {
+    cookieContributorId: parseInt(cookies(ctx).contributorId || '', 10),
+  };
+};
 
 export default GiftPage;

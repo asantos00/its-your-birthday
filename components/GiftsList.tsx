@@ -27,7 +27,7 @@ const GiftsList = ({ gifts, collaboratorId, onUpvoteChange }: {
       </Header>
       <Box pad="large">
         {gifts.map((gift) => (
-          <Box key={gift.description} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
+          <Box key={gift.id} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
             <Box basis="70%" flex="grow">
               <Anchor target="_blank" href={gift.url}><Text>{gift.description}</Text></Anchor>
             </Box>
