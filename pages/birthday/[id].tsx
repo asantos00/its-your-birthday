@@ -9,10 +9,10 @@ import {
 } from "grommet"
 import useSWR from 'swr';
 import { ShareOption, Add } from 'grommet-icons';
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import copy from 'copy-to-clipboard';
-import GiftsList from "../../components/GiftsList";
+import GiftsList, { GiftsWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
 import { PrismaClient, Birthday, BirthdaySelect, BirthdayInclude, Contributor, Gift } from '@prisma/client'
 
@@ -47,20 +47,35 @@ const initialNewGift = { description: '', author: 'a.santos@kigroup.de', url: ''
 
 interface BirthdayWithContributorsAndGifts extends Birthday {
   contributors?: Contributor[],
-  gifts?: Gift[]
+  gifts?: GiftsWithUpvotes[]
 }
 
 const GiftPage = () => {
+  const contributorsListRef = useRef<HTMLElement>(null);
   const { query } = useRouter();
-  const { data: birthday, error, mutate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
+  const { data: birthday, error, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
   const [copied, setCopied] = useState(false);
   const [newGift, setNewGift] = useState(initialNewGift)
+  const [myName, setMyName] = useState('')
   const [likes, setLikes] = useState(myLikes);
   const [dislikes, setDislikes] = useState(myDislikes);
 
-  const onChangeContributors = (contributors: Contributor[]) => {
-    // @ts-ignore
-    mutate({ contributors: contributors })
+  const onChangeContributors = async (contributor: Contributor) => {
+    await fetch(`/api/birthdays/${birthday?.id}/contributors/${contributor.id}/hasPaid`, {
+      method: 'PATCH',
+      body: JSON.stringify({ hasPaid: contributor.hasPaid }),
+      headers: {
+        'content-type': "application/json"
+      }
+    }).then(r => r.json())
+      .then(contributor => {
+        mutate({
+          ...birthday,
+          contributors: birthday.contributors.map(c => {
+            return c.id === contributor.id ? contributor : c;
+          })
+        })
+      })
   }
   const onChangeGifts = async (gift) => {
     await fetch(`/api/birthdays/${birthday?.id}/gifts`, {
@@ -71,12 +86,52 @@ const GiftPage = () => {
       }
     })
 
-    // @ts-ignore
-    mutate({ gifts: birthday.gifts.concat(gift) })
+    mutate({ ...birthday, gifts: birthday.gifts.concat(gift) })
+  }
+
+  const onAddMyName = async () => {
+    fetch(`/api/birthdays/${birthday.id}/contributors`, {
+      method: 'POST',
+      body: JSON.stringify({ name: myName }),
+      headers: {
+        'content-type': "application/json"
+      }
+    }).then(r => r.json())
+      .then(contributor => {
+        setMyName('');
+        mutate({
+          ...birthday,
+          contributors: birthday.contributors.concat(contributor)
+        })
+        contributorsListRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'center'
+        })
+      })
+  }
+
+  const onUpvoteChange = async (gift: Gift, isUpvoted) => {
+    fetch(`/api/birthdays/${birthday.id}/gifts/${gift.id}/upvotedBy`, {
+      method: 'PATCH',
+      body: JSON.stringify({ contributorId: 7, isUpvoted }),
+      headers: {
+        'content-type': "application/json"
+      }
+    }).then(r => r.json())
+      .then(gift => {
+        mutate({
+          ...birthday,
+          gifts: birthday.gifts.map(g => g.id === gift.id
+            ? { ...g, ...gift }
+            : g
+          )
+        })
+      })
   }
 
   return (
-    <Main pad={{ bottom: "100px" }} overflow="scroll">
+    <Main pad={{ bottom: "100px" }}>
       <Box
         animation={"slideDown"}
         pad="small"
@@ -115,11 +170,10 @@ const GiftPage = () => {
       </Box>
       <GiftsList
         gifts={birthday?.gifts}
-        onLike={(gift) => setLikes(likes.concat(gift.link))}
-        onDislike={(gift) => setDislikes(dislikes.concat(gift.link))}
-        myDislikes={dislikes}
-        myLikes={likes} />
-      <ContributorsList contributors={birthday?.contributors} onChange={onChangeContributors} />
+        onUpvoteChange={onUpvoteChange}
+        collaboratorId={7}
+      />
+      <ContributorsList listRef={contributorsListRef} contributors={birthday?.contributors} onChange={onChangeContributors} />
       <Box style={{ zIndex: 0 }}>
         <Box
           direction="row"
@@ -135,10 +189,10 @@ const GiftPage = () => {
           elevation="reverse" >
           <Box flex="grow" margin={{ right: "medium" }}>
             <FormField label="Add your name to the list" margin={{ bottom: "0" }}>
-              <TextInput placeholder="Insert name of the item" />
+              <TextInput placeholder="Insert name of the item" value={myName} onChange={e => setMyName(e.target.value)} />
             </FormField>
           </Box>
-          <Button style={{ height: 48, width: 48, padding: 0 }} size="small" icon={<Add size="medium" />} />
+          <Button style={{ height: 48, width: 48, padding: 0 }} size="small" icon={<Add size="medium" />} onClick={onAddMyName} />
         </Box>
       </Box>
     </Main >

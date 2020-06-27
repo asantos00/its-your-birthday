@@ -3,7 +3,19 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '1mb',
+    },
+  },
+}
+
 async function patch(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === 'POST') {
+    return post(req, res);
+  }
+
   const birthday = await prisma.birthday.update({
     where: { id: parseInt(req.query.id as string, 10) },
     data: {
@@ -12,6 +24,22 @@ async function patch(req: NextApiRequest, res: NextApiResponse) {
       }
     }
   });
+
+  res.json(birthday)
+
+  await prisma.disconnect()
+}
+
+async function post(req: NextApiRequest, res: NextApiResponse) {
+  const birthday = await prisma.contributor.create({
+    data: {
+      Birthday: {
+        connect: { id: parseInt(req.query.id as string, 10) }
+      },
+      name: req.body.name,
+      email: req.body.name
+    }
+  })
 
   res.json(birthday)
 

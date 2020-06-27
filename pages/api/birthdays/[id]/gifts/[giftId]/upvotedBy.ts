@@ -12,21 +12,19 @@ export const config = {
 }
 
 async function handle(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    const birthday = await prisma.birthday.update({
-      where: { id: parseInt(req.query.id as string, 10) },
-      data: {
-        gifts: {
-          create: { description: req.body.description, url: req.body.url },
-        }
-      }
-    });
+  const operation = req.body.isUpvoted ? 'connect' : 'disconnect';
 
-    res.json(birthday)
-  } catch (e) {
-    console.log(e);
-    res.status(400);
-  }
+  console.log('going to ', operation)
+  const contributor = await prisma.gift.update({
+    where: { id: parseInt(req.query.giftId as string) },
+    data: {
+      upvotedBy: {
+        [operation]: { id: req.body.contributorId },
+      }
+    }
+  })
+
+  res.json(contributor);
 
   await prisma.disconnect()
 }

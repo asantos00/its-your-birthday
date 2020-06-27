@@ -1,7 +1,7 @@
 import { Box, Text, CheckBox, Header } from "grommet";
 import { useMemo } from "react";
 
-const ContributorsList = ({ contributors, onChange }) => {
+const ContributorsList = ({ contributors, onChange, listRef }) => {
   if (!contributors?.length) {
     return null;
   }
@@ -14,7 +14,7 @@ const ContributorsList = ({ contributors, onChange }) => {
         <Text color="dark-1">Name</Text>
         <Text color="dark-1">Contributed ({hasContributed.length}/{contributors.length})</Text>
       </Header>
-      <Box pad="large">
+      <Box ref={listRef} pad="large">
         {contributors.map(contributor => (
           <Box key={contributor.name} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
             <Box basis="70%" flex="grow">
@@ -23,15 +23,8 @@ const ContributorsList = ({ contributors, onChange }) => {
             <Box basis="5%" margin={{ horizontal: "medium" }}>
               <CheckBox
                 checked={contributor.hasContributed}
-                onChange={() => {
-                  const newContributors = contributors.reduce((acc, contri) => {
-                    return acc.concat(
-                      contri.name === contributor.name
-                        ? { ...contri, hasContributed: !contri.hasContributed }
-                        : contri
-                    );
-                  }, [])
-                  onChange(newContributors);
+                onChange={(e) => {
+                  onChange({ ...contributor, hasPaid: e.target.checked });
                 }} />
             </Box>
           </Box>

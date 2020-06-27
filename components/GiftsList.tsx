@@ -1,16 +1,22 @@
 import { Box, Header, Anchor, Text } from "grommet";
 import { Like, Dislike } from "grommet-icons";
-import { Gift, FindManyGiftArgs, GiftSelect } from "@prisma/client";
+import { Gift, Contributor } from "@prisma/client";
 
-const GiftsList = ({ gifts, myLikes, myDislikes, onLike, onDislike }: {
-  gifts: Gift[],
-  myLikes: any,
-  myDislikes: any,
-  onLike: (like) => void
-  onDislike: (like) => void
+export interface GiftsWithUpvotes extends Gift {
+  upvotedBy: Contributor[]
+}
+
+const GiftsList = ({ gifts, collaboratorId, onUpvoteChange }: {
+  gifts: GiftsWithUpvotes[],
+  collaboratorId: number,
+  onUpvoteChange: (gift: Gift, isUpvoted: boolean) => void
 }) => {
   if (!gifts?.length) {
     return null;
+  }
+
+  const collaboratorUpvotedGift = (upvotedBy) => {
+    return upvotedBy.some(c => c.id === collaboratorId)
   }
 
   return (
@@ -20,16 +26,14 @@ const GiftsList = ({ gifts, myLikes, myDislikes, onLike, onDislike }: {
         <Text color="dark-1">Votes</Text>
       </Header>
       <Box pad="large">
-        {gifts.map(gift => (
+        {gifts.map((gift) => (
           <Box key={gift.description} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
             <Box basis="70%" flex="grow">
               <Anchor target="_blank" href={gift.url}><Text>{gift.description}</Text></Anchor>
             </Box>
-            <Box basis="5%" margin={{ horizontal: "medium" }}>
-              <Like onClick={() => onLike(gift)} color={myLikes.includes(gift.url) ? "brand" : "dark-5"} />
-            </Box>
-            <Box basis="5%" margin={{ horizontal: "medium" }}>
-              <Dislike onClick={() => onDislike(gift)} color={myDislikes.includes(gift.url) ? "brand" : "dark-5"} />
+            <Box basis="20%" justify="end" direction="row" margin={{ horizontal: "medium" }}>
+              <Text margin={{ right: "small" }}>({gift.upvotedBy.length})</Text>
+              <Like onClick={() => onUpvoteChange(gift, !collaboratorUpvotedGift(gift.upvotedBy))} color={collaboratorUpvotedGift(gift.upvotedBy) ? 'brand' : 'dark-5'} />
             </Box>
           </Box>
         ))}

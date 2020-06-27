@@ -17,7 +17,11 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
     where: { id: parseInt(req.query.id as string, 10) },
     include: {
       contributors: true,
-      gifts: true
+      gifts: {
+        include: {
+          upvotedBy: true
+        }
+      },
     }
   });
 
