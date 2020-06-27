@@ -36,9 +36,14 @@ const GiftPage = ({ cookieContributorId }) => {
   const [myName, setMyName] = useState('')
 
   useEffect(() => {
+    if (!birthday || !myContributorId) {
+      return;
+    }
+
     const date = new Date();
     date.setMonth(date.getMonth() + 1);
-    let cookieValue = `contributorId=${myContributorId};expires=${date.toUTCString()};path=/birthday/${birthday?.id}`;
+    const saveToCookie = { contributorId: myContributorId };
+    let cookieValue = `birthday-${birthday.id}=${JSON.stringify(saveToCookie)};expires=${date.toUTCString()};path=/`;
     document.cookie = cookieValue;
   }, [myContributorId, birthday?.id]);
 
@@ -204,8 +209,15 @@ const GiftPage = ({ cookieContributorId }) => {
 }
 
 GiftPage.getInitialProps = async (ctx) => {
+  const birthdayId = ctx.query.id;
+  const cookiesValue = cookies(ctx)
+
+  if (!cookiesValue[`birthday-${birthdayId}`]) {
+    return { cookieContributorId: null };
+  }
+
   return {
-    cookieContributorId: parseInt(cookies(ctx).contributorId || '', 10),
+    cookieContributorId: parseInt(cookiesValue[`birthday-${birthdayId}`].contributorId, 10)
   };
 };
 

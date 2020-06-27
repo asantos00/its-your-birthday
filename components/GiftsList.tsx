@@ -33,10 +33,13 @@ const GiftsList = ({ gifts, collaboratorId, onUpvoteChange }: {
             </Box>
             <Box basis="20%" justify="end" direction="row" margin={{ horizontal: "medium" }}>
               <Text margin={{ right: "small" }}>({gift.upvotedBy?.length})</Text>
-              <Like onClick={() => onUpvoteChange(gift, !collaboratorUpvotedGift(gift.upvotedBy))} color={collaboratorUpvotedGift(gift.upvotedBy) ? 'brand' : 'dark-5'} />
+              <Like
+                style={{ cursor: collaboratorId ? 'inherit' : 'not-allowed' }}
+                onClick={() => collaboratorId && onUpvoteChange(gift, !collaboratorUpvotedGift(gift.upvotedBy))} color={collaboratorUpvotedGift(gift.upvotedBy) ? 'brand' : 'dark-5'} />
             </Box>
           </Box>
         ))}
+        {!collaboratorId && (<Text color="dark-4" margin={{ top: "medium" }} size="xsmall">You need to add your name to the contributors list to upvote</Text>)}
       </Box>
     </Box>
   )
