@@ -6,7 +6,7 @@ const ContributorsList = ({ contributors, myContributorId, onChange, listRef }) 
     return null;
   }
 
-  const hasContributed = useMemo(() => contributors.filter(c => c.hasContributed), [contributors]);
+  const hasContributed = useMemo(() => contributors.filter(c => c.hasPaid), [contributors]);
 
   return (
     <>
@@ -26,7 +26,7 @@ const ContributorsList = ({ contributors, myContributorId, onChange, listRef }) 
             </Box>
             <Box basis="5%" margin={{ horizontal: "medium" }}>
               <CheckBox
-                checked={contributor.hasContributed}
+                checked={contributor.hasPaid}
                 onChange={(e) => {
                   onChange({ ...contributor, hasPaid: e.target.checked });
                 }} />
