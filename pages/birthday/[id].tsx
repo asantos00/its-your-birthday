@@ -31,6 +31,8 @@ const GiftPage = ({ cookieContributorId }) => {
   const { data: birthday, mutate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
   const [copied, setCopied] = useState(false);
   const [newGift, setNewGift] = useState(initialNewGift)
+  const [forceShowAddName, setForceShowAddName] = useState(false);
+
   const [myName, setMyName] = useState('')
 
   useEffect(() => {
@@ -69,7 +71,7 @@ const GiftPage = ({ cookieContributorId }) => {
     mutate({ ...birthday, gifts: birthday.gifts.concat(gift) })
   }
 
-  const onAddMyName = async () => {
+  const onAddName = async (isOtherPersonName) => {
     fetch(`/api/birthdays/${birthday.id}/contributors`, {
       method: 'POST',
       body: JSON.stringify({ name: myName }),
@@ -78,7 +80,10 @@ const GiftPage = ({ cookieContributorId }) => {
       }
     }).then(r => r.json())
       .then(contributor => {
-        setMyContributorId(contributor.id);
+        setForceShowAddName(false);
+        if (!isOtherPersonName) {
+          setMyContributorId(contributor.id);
+        }
         setMyName('');
         mutate({
           ...birthday,
@@ -95,7 +100,7 @@ const GiftPage = ({ cookieContributorId }) => {
   const onUpvoteChange = async (gift: Gift, isUpvoted) => {
     fetch(`/api/birthdays/${birthday.id}/gifts/${gift.id}/upvotedBy`, {
       method: 'PATCH',
-      body: JSON.stringify({ contributorId: myContributorId, isUpvoted }),
+      body: JSON.stringify({ isUpvoted }),
       headers: {
         'content-type': "application/json"
       }
@@ -166,27 +171,34 @@ const GiftPage = ({ cookieContributorId }) => {
         myContributorId={myContributorId}
         listRef={contributorsListRef} contributors={birthday?.contributors}
         onChange={onChangeContributors} />
-      <Box style={{ zIndex: 0 }}>
-        <Box
-          direction="row"
-          flex="grow"
-          justify="between"
-          align="end"
-          background="white"
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            width: '100%'
-          }} pad="medium"
-          elevation="reverse" >
-          <Box flex="grow" margin={{ right: "medium" }}>
-            <FormField label="Add your name to the list" margin={{ bottom: "0" }}>
-              <TextInput placeholder="Insert name of the item" value={myName} onChange={e => setMyName(e.target.value)} />
-            </FormField>
+      {!forceShowAddName ? (
+        <Button margin="small" size="medium" onClick={() => setForceShowAddName(true)}>
+          Add a person name to the list
+        </Button>
+      ) : null}
+      {!myContributorId || forceShowAddName ? (
+        <Box style={{ zIndex: 0 }}>
+          <Box
+            direction="row"
+            flex="grow"
+            justify="between"
+            align="end"
+            background="white"
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              width: '100%'
+            }} pad="medium"
+            elevation="reverse" >
+            <Box flex="grow" margin={{ right: "medium" }}>
+              <FormField label="Add a name to the list" margin={{ bottom: "0" }}>
+                <TextInput placeholder="Insert the name" value={myName} onChange={e => setMyName(e.target.value)} />
+              </FormField>
+            </Box>
+            <Button style={{ height: 48, width: 48, padding: 0 }} size="small" icon={<Add size="medium" />} onClick={() => onAddName(forceShowAddName)} />
           </Box>
-          <Button style={{ height: 48, width: 48, padding: 0 }} size="small" icon={<Add size="medium" />} onClick={onAddMyName} />
-        </Box>
-      </Box>
+        </Box>) : null
+      }
     </Main >
   )
 }

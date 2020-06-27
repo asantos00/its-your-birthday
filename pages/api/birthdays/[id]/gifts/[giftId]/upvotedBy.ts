@@ -13,13 +13,11 @@ export const config = {
 
 async function handle(req: NextApiRequest, res: NextApiResponse) {
   const operation = req.body.isUpvoted ? 'connect' : 'disconnect';
-
-  console.log('going to ', operation)
   const contributor = await prisma.gift.update({
     where: { id: parseInt(req.query.giftId as string) },
     data: {
       upvotedBy: {
-        [operation]: { id: req.body.contributorId },
+        [operation]: { id: parseInt(req.cookies.contributorId, 10) },
       }
     }
   })
