@@ -16,7 +16,11 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
   const birthday = await prisma.birthday.findOne({
     where: { id: parseInt(req.query.id as string, 10) },
     include: {
-      contributors: true,
+      contributors: {
+        orderBy: {
+          createdAt: 'asc'
+        }
+      },
       gifts: {
         include: {
           upvotedBy: true

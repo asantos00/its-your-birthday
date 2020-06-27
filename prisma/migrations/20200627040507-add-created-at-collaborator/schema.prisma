@@ -3,7 +3,7 @@
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url = "***"
 }
 
 generator client {
@@ -31,6 +31,10 @@ model Gift {
   suggestor   Contributor?  @relation(name: "giftSuggestor", fields: [authorId], references: [id])
   authorId    Int?
   upvotedBy   Contributor[] @relation("upvotedBy")
+}
+
+model UpvotesByGift {
+  id Int @default(autoincrement()) @id
 }
 
 model Birthday {

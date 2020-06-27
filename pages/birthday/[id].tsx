@@ -14,34 +14,10 @@ import { useRouter } from "next/router";
 import copy from 'copy-to-clipboard';
 import GiftsList, { GiftsWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
-import { PrismaClient, Birthday, BirthdaySelect, BirthdayInclude, Contributor, Gift } from '@prisma/client'
+import { Birthday, Contributor, Gift } from '@prisma/client'
 
-const initialGifts = [
-  // { author: 'a.santos@kigroup.de', title: 'cenas', votes: 5, link: 'https://www.amazon.es/Havaianas-Chanclas-Unisex-Adulto-Brazilian/dp/B07F14Q8GW/ref=sr_1_2_sspa?__mk_es_ES=%C3%85M%C3%85%C5%BD%C3%95%C3%91&dchild=1&keywords=havaianas&qid=1590576032&rnid=1571263031&s=shoes&sr=1-2-spons&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUFGQjM1M0U3N1o3VTUmZW5jcnlwdGVkSWQ9QTA5OTAyMzMyTFNJVUFJQlBNT1kyJmVuY3J5cHRlZEFkSWQ9QTA5MTY5NzQxOUJLMzk2QTlHMzI0JndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ&th=1&psc=1' },
-  // { author: 'a.santos@kigroup.de', title: 'segunda cena', votes: 5, link: 'https://www.amazon.es/Havaianas-Chanclas-Unisex-Adulto-Brazilian/dp/B07F14Q8GW/ref=sr_1_2_sspa?__mk_es_ES=%C3%85M%C3%85%C5%BD%C3%95%C3%91&dchild=1&keywords=havaianas&qid=1590576032&rnid=1571263031&s=shoes&sr=1-2-spons&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUFGQjM1M0U3N1o3VTUmZW5jcnlwdGVkSWQ9QTA5OTAyMzMyTFNJVUFJQlBNT1kyJmVuY3J5cHRlZEFkSWQ9QTA5MTY5NzQxOUJLMzk2QTlHMzI0JndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ&th=1&psc=1casca' }
-]
+const MOCKED_OWN_COLLABORATOR_ID = 1;
 
-const myLikes = [
-  'https://www.amazon.es/Havaianas-Chanclas-Unisex-Adulto-Brazilian/dp/B07F14Q8GW/ref=sr_1_2_sspa?__mk_es_ES=%C3%85M%C3%85%C5%BD%C3%95%C3%91&dchild=1&keywords=havaianas&qid=1590576032&rnid=1571263031&s=shoes&sr=1-2-spons&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUFGQjM1M0U3N1o3VTUmZW5jcnlwdGVkSWQ9QTA5OTAyMzMyTFNJVUFJQlBNT1kyJmVuY3J5cHRlZEFkSWQ9QTA5MTY5NzQxOUJLMzk2QTlHMzI0JndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ&th=1&psc=1'
-]
-
-const myDislikes = [
-]
-
-const initialContributors = [
-  {
-    name: 'Alexandre Santos',
-    hasContributed: true,
-  },
-  {
-    name: 'Felipe Schmitt',
-    hasContributed: false,
-  },
-  {
-    name: 'Gonçalito',
-    hasContributed: false,
-  }
-]
 
 const initialNewGift = { description: '', author: 'a.santos@kigroup.de', url: '' }
 
@@ -53,12 +29,10 @@ interface BirthdayWithContributorsAndGifts extends Birthday {
 const GiftPage = () => {
   const contributorsListRef = useRef<HTMLElement>(null);
   const { query } = useRouter();
-  const { data: birthday, error, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
+  const { data: birthday, isValidating: isLoading, mutate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
   const [copied, setCopied] = useState(false);
   const [newGift, setNewGift] = useState(initialNewGift)
   const [myName, setMyName] = useState('')
-  const [likes, setLikes] = useState(myLikes);
-  const [dislikes, setDislikes] = useState(myDislikes);
 
   const onChangeContributors = async (contributor: Contributor) => {
     await fetch(`/api/birthdays/${birthday?.id}/contributors/${contributor.id}/hasPaid`, {
@@ -114,7 +88,7 @@ const GiftPage = () => {
   const onUpvoteChange = async (gift: Gift, isUpvoted) => {
     fetch(`/api/birthdays/${birthday.id}/gifts/${gift.id}/upvotedBy`, {
       method: 'PATCH',
-      body: JSON.stringify({ contributorId: 7, isUpvoted }),
+      body: JSON.stringify({ contributorId: MOCKED_OWN_COLLABORATOR_ID, isUpvoted }),
       headers: {
         'content-type': "application/json"
       }
@@ -128,6 +102,10 @@ const GiftPage = () => {
           )
         })
       })
+  }
+
+  if (!birthday) {
+    return <Text size="large" margin="medium">Loading...</Text>
   }
 
   return (
@@ -171,7 +149,7 @@ const GiftPage = () => {
       <GiftsList
         gifts={birthday?.gifts}
         onUpvoteChange={onUpvoteChange}
-        collaboratorId={7}
+        collaboratorId={MOCKED_OWN_COLLABORATOR_ID}
       />
       <ContributorsList listRef={contributorsListRef} contributors={birthday?.contributors} onChange={onChangeContributors} />
       <Box style={{ zIndex: 0 }}>

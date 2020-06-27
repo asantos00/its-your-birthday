@@ -16,7 +16,7 @@ const GiftsList = ({ gifts, collaboratorId, onUpvoteChange }: {
   }
 
   const collaboratorUpvotedGift = (upvotedBy) => {
-    return upvotedBy.some(c => c.id === collaboratorId)
+    return upvotedBy?.some(c => c.id === collaboratorId)
   }
 
   return (
@@ -32,7 +32,7 @@ const GiftsList = ({ gifts, collaboratorId, onUpvoteChange }: {
               <Anchor target="_blank" href={gift.url}><Text>{gift.description}</Text></Anchor>
             </Box>
             <Box basis="20%" justify="end" direction="row" margin={{ horizontal: "medium" }}>
-              <Text margin={{ right: "small" }}>({gift.upvotedBy.length})</Text>
+              <Text margin={{ right: "small" }}>({gift.upvotedBy?.length})</Text>
               <Like onClick={() => onUpvoteChange(gift, !collaboratorUpvotedGift(gift.upvotedBy))} color={collaboratorUpvotedGift(gift.upvotedBy) ? 'brand' : 'dark-5'} />
             </Box>
           </Box>
