@@ -14,7 +14,7 @@ import { useRouter } from "next/router";
 import copy from 'copy-to-clipboard';
 import GiftsList from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Birthday, BirthdaySelect, BirthdayInclude, Contributor, Gift } from '@prisma/client'
 
 const initialGifts = [
   // { author: 'a.santos@kigroup.de', title: 'cenas', votes: 5, link: 'https://www.amazon.es/Havaianas-Chanclas-Unisex-Adulto-Brazilian/dp/B07F14Q8GW/ref=sr_1_2_sspa?__mk_es_ES=%C3%85M%C3%85%C5%BD%C3%95%C3%91&dchild=1&keywords=havaianas&qid=1590576032&rnid=1571263031&s=shoes&sr=1-2-spons&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUFGQjM1M0U3N1o3VTUmZW5jcnlwdGVkSWQ9QTA5OTAyMzMyTFNJVUFJQlBNT1kyJmVuY3J5cHRlZEFkSWQ9QTA5MTY5NzQxOUJLMzk2QTlHMzI0JndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ&th=1&psc=1' },
@@ -43,19 +43,37 @@ const initialContributors = [
   }
 ]
 
-const initialNewGift = { title: '', author: 'a.santos@kigroup.de', link: '' }
+const initialNewGift = { description: '', author: 'a.santos@kigroup.de', url: '' }
 
+interface BirthdayWithContributorsAndGifts extends Birthday {
+  contributors?: Contributor[],
+  gifts?: Gift[]
+}
 
 const GiftPage = () => {
   const { query } = useRouter();
-  const { data: birthday, error } = useSWR(() => query.id ? `/api/birthdays/${query.id}` : null);
+  const { data: birthday, error, mutate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
   const [copied, setCopied] = useState(false);
   const [newGift, setNewGift] = useState(initialNewGift)
   const [likes, setLikes] = useState(myLikes);
   const [dislikes, setDislikes] = useState(myDislikes);
 
-  const onChangeContributors = (contributors) => { }
-  const onChangeGifts = (gift) => { }
+  const onChangeContributors = (contributors: Contributor[]) => {
+    // @ts-ignore
+    mutate({ contributors: contributors })
+  }
+  const onChangeGifts = async (gift) => {
+    await fetch(`/api/birthdays/${birthday?.id}/gifts`, {
+      method: 'PATCH',
+      body: JSON.stringify(gift),
+      headers: {
+        'content-type': "application/json"
+      }
+    })
+
+    // @ts-ignore
+    mutate({ gifts: birthday.gifts.concat(gift) })
+  }
 
   return (
     <Main pad={{ bottom: "100px" }} overflow="scroll">
@@ -83,10 +101,10 @@ const GiftPage = () => {
       </Box>
       <Box color="white" pad={{ top: "medium", horizontal: "large", bottom: "large" }}>
         <FormField label="What is it?">
-          <TextInput placeholder="Insert name of the item" onChange={e => setNewGift({ ...newGift, title: e.target.value })} value={newGift.title} />
+          <TextInput placeholder="Insert name of the item" onChange={e => setNewGift({ ...newGift, description: e.target.value })} value={newGift.description} />
         </FormField>
         <FormField label="I have a gift idea">
-          <TextInput placeholder="Insert gift link" onChange={e => setNewGift({ ...newGift, link: e.target.value })} value={newGift.link} />
+          <TextInput placeholder="Insert gift link" onChange={e => setNewGift({ ...newGift, url: e.target.value })} value={newGift.url} />
         </FormField>
         <Button margin={{ top: "small" }} onClick={() => {
           onChangeGifts(newGift);
