@@ -111,11 +111,17 @@ function App({ Component, pageProps }) {
         </Link>
       </Header>
       <SWRConfig value={{
-        fetcher: (url, options) => fetch(url, options).then(r => r.json())
+        fetcher: (url, options) => fetch(url, options).then(async (r) => {
+          if (r.status >= 400) {
+            throw await r.json();
+          }
+
+          return r.json();
+        })
       }}>
         <Component {...pageProps} />
       </SWRConfig>
-    </Grommet>
+    </Grommet >
   )
 }
 

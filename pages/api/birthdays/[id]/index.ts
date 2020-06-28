@@ -33,7 +33,7 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
     if (birthday) {
       res.json(birthday)
     } else {
-      res.status(404).end();
+      res.status(404).json({ message: 'Could not find this birthday' });
     }
   } catch (e) {
     res.status(400).json({ message: e });

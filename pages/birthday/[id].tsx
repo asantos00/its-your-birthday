@@ -7,6 +7,7 @@ import {
   TextInput,
   Button,
   Collapsible,
+  Anchor,
 } from "grommet"
 import { ShareOption } from 'grommet-icons';
 import useSWR from 'swr';
@@ -19,6 +20,7 @@ import GiftsList, { GiftWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
 import AddPerson from "../../components/AddPerson";
 import * as Client from '../../client';
+import Link from 'next/link';
 
 export type GiftToCreate = Omit<GiftWithUpvotes, "authorId" | "id" | "birthdayId">;
 const initialNewGift: GiftToCreate = {
@@ -51,7 +53,7 @@ const GiftPage = ({ cookieContributorId }: { cookieContributorId?: number }) => 
   const { query } = useRouter();
   const contributorsListRef = useRef<HTMLElement>(null);
   const [myContributorId, setMyContributorId] = useState(cookieContributorId);
-  const { data: birthday, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
+  const { data: birthday, error, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
   const { data: myContributor } = useSWR<Contributor>(() => myContributorId ? `/api/contributors/${myContributorId}` : null, {
     focusThrottleInterval: 5 * 60 * 1000
   });
@@ -64,6 +66,24 @@ const GiftPage = ({ cookieContributorId }: { cookieContributorId?: number }) => 
 
   const showAddOtherPersonButton = !isAddingAnotherPerson && myContributorId;
   const showAddPersonBox = !myContributorId || isAddingAnotherPerson;
+
+  if (error) {
+    return (
+      <Box width="100%" height="100%" align="center" justify="center">
+        <Text size="large" margin="medium">
+          {error.message}
+        </Text>
+        <Anchor href={window.location.href}>
+          Refresh
+        </Anchor>
+        <Link href="/">
+          <Anchor>
+            Back to home
+          </Anchor>
+        </Link>
+      </Box>
+    )
+  }
 
   if (!birthday) {
     return (
