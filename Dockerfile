@@ -4,8 +4,8 @@ COPY package* ./
 RUN npm install
 
 COPY . .
-RUN npm run build
 RUN npm run generate-prisma
+RUN npm run build
 
 EXPOSE 3000
 

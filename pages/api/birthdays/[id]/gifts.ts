@@ -14,6 +14,10 @@ export const config = {
 
 async function handle(req: NextApiRequest, res: NextApiResponse) {
   const { contributorId } = getCookieForBirthdayId(req, req.query.id as string);
+
+  if (!contributorId) {
+    res.status(400).json({ message: 'You need to register your name to submit a suggestion' })
+  }
   try {
     const birthday = await prisma.birthday.update({
       where: { id: parseInt(req.query.id as string, 10) },
@@ -32,7 +36,7 @@ async function handle(req: NextApiRequest, res: NextApiResponse) {
 
     res.json(birthday)
   } catch (e) {
-    res.status(400).end();
+    res.status(400).json({ message: 'Not possible to create a suggestion' })
   }
 
   await prisma.disconnect()

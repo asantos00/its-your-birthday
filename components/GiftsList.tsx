@@ -7,15 +7,15 @@ export interface GiftsWithUpvotes extends Gift {
 }
 
 const GiftsList = ({ gifts, collaboratorId, onUpvoteChange }: {
-  gifts: GiftsWithUpvotes[],
-  collaboratorId: number,
-  onUpvoteChange: (gift: Gift, isUpvoted: boolean) => void
+  gifts?: GiftsWithUpvotes[],
+  collaboratorId?: number,
+  onUpvoteChange: (gift: GiftsWithUpvotes, isUpvoted: boolean) => void
 }) => {
   if (!gifts?.length) {
     return null;
   }
 
-  const collaboratorUpvotedGift = (upvotedBy) => {
+  const collaboratorUpvotedGift = (upvotedBy: Contributor[]) => {
     return upvotedBy?.some(c => c.id === collaboratorId)
   }
 
@@ -30,7 +30,7 @@ const GiftsList = ({ gifts, collaboratorId, onUpvoteChange }: {
           const canUpvote = collaboratorId && gift.id;
           const isLoading = !gift.id;
           return (
-            <Box key={gift.id} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
+            <Box key={gift.id || "creating"} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
               <Box basis="70%" flex="grow">
                 <Anchor target="_blank" href={gift.url}><Text>{gift.description}</Text></Anchor>
               </Box>

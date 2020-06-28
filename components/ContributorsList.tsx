@@ -1,12 +1,13 @@
 import { Box, Text, CheckBox, Header, Anchor } from "grommet";
-import { useMemo, Ref, RefObject, RefCallback, HtmlHTMLAttributes, MutableRefObject } from "react";
+import { useMemo } from "react";
 import { Contributor } from "@prisma/client";
-import { CloudUpload } from "grommet-icons";
+import { Trash } from "grommet-icons";
 
 interface ContributorsListProps {
-  contributors: Contributor[]
+  contributors?: Contributor[]
   myContributorId?: number;
   onChange: (contributor: Contributor) => void
+  onDelete: (contributor: Contributor) => void
   onThisIsMe: (contributor: Contributor) => void
   listRef?: any
 }
@@ -16,6 +17,7 @@ const ContributorsList = ({
   myContributorId,
   onChange,
   onThisIsMe,
+  onDelete,
   listRef
 }: ContributorsListProps) => {
   if (!contributors?.length) {
@@ -41,14 +43,17 @@ const ContributorsList = ({
                   {contributor.name}
                 </Text>
                 {!myContributorId && (
-                  <Text size="small" margin="small" onClick={() => onThisIsMe(contributor)}>
+                  <Text size="small" margin={{ horizontal: "small" }} onClick={() => onThisIsMe(contributor)}>
                     <Anchor>
                       This is me
                   </Anchor>
                   </Text>)
                 }
               </Box>
-              <Box basis="5%" margin={{ horizontal: "medium" }}>
+              <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
+                <Trash onClick={() => onDelete(contributor)} />
+              </Box>
+              <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
                 <CheckBox
                   checked={contributor.hasPaid}
                   onChange={(e) => {

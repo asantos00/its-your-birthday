@@ -1,4 +1,7 @@
 import { Contributor, Gift } from "@prisma/client"
+import { GiftToCreate } from '../pages/birthday/[id]'
+
+const logError = console.error;
 
 export const updateContributorHasPaid = (birthdayId: number, contributor: Contributor) => {
   return fetch(`/api/birthdays/${birthdayId}/contributors/${contributor.id}/hasPaid`, {
@@ -10,7 +13,7 @@ export const updateContributorHasPaid = (birthdayId: number, contributor: Contri
   }).then(r => r.json())
 }
 
-export const addGift = (birthdayId: number, gift: Gift) => {
+export const addGift = (birthdayId: number, gift: GiftToCreate) => {
   return fetch(`/api/birthdays/${birthdayId}/gifts`, {
     method: 'PATCH',
     body: JSON.stringify(gift),
@@ -24,6 +27,15 @@ export const addContributor = (birthdayId: number, name: string) => {
   return fetch(`/api/birthdays/${birthdayId}/contributors`, {
     method: 'POST',
     body: JSON.stringify({ name }),
+    headers: {
+      'content-type': "application/json"
+    }
+  }).then(r => r.json())
+}
+
+export const deleteContributor = (contributorId: number) => {
+  return fetch(`/api/contributors/${contributorId}`, {
+    method: 'DELETE',
     headers: {
       'content-type': "application/json"
     }
