@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Main,
   Text,
@@ -11,7 +11,6 @@ import {
 } from "grommet"
 import { ShareOption } from 'grommet-icons';
 import useSWR from 'swr';
-import cookies from 'next-cookies'
 import { useRouter } from "next/router";
 import copy from 'copy-to-clipboard';
 import { Birthday, Contributor, PrismaClient } from '@prisma/client'
@@ -21,6 +20,7 @@ import ContributorsList from "../../components/ContributorsList";
 import AddPerson from "../../components/AddPerson";
 import * as Client from '../../client';
 import Link from 'next/link';
+import useContributorIdFromCookie from "../../hooks/useContributorIdFromCookie";
 
 export type GiftToCreate = Omit<GiftWithUpvotes, "authorId" | "id" | "birthdayId">;
 const initialNewGift: GiftToCreate = {
@@ -32,42 +32,28 @@ interface BirthdayWithContributorsAndGifts extends Birthday {
   gifts?: GiftWithUpvotes[],
 }
 
-const useSetBirthdayContributor = (
-  birthday?: BirthdayWithContributorsAndGifts,
-  contributorId?: number
-) => {
-  useEffect(() => {
-    if (!birthday?.id) {
-      return;
-    }
-
-    const date = new Date();
-    date.setMonth(date.getMonth() + 1);
-    const saveToCookie = { contributorId: contributorId || null };
-    let cookieValue = `birthday-${birthday?.id}=${JSON.stringify(saveToCookie)};expires=${date.toUTCString()};path=/`;
-    document.cookie = cookieValue;
-  }, [contributorId, birthday?.id]);
-}
-
-const GiftPage = ({ cookieContributorId, initialBirthday }: { cookieContributorId?: number, initialBirthday: any }) => {
+const GiftPage = ({
+  initialBirthday
+}: {
+  initialBirthday: any
+}) => {
   const { query } = useRouter();
-  const contributorsListRef = useRef<HTMLElement>(null);
-  const [myContributorId, setMyContributorId] = useState(cookieContributorId);
+  const [myContributorId, setMyContributorId] = useContributorIdFromCookie(query.id as string);
   const { data: birthday, error, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(
-    () => query.id ? `/api/birthdays/${query.id}` : null,
-    { initialData: initialBirthday }
+    `/api/birthdays/${query.id}`,
+    { initialData: initialBirthday, revalidateOnMount: true }
   );
+  const { data: myContributor } = useSWR<Contributor>(
+    () => myContributorId ? `/api/contributors/${myContributorId}` : null,
+    { focusThrottleInterval: 5 * 60 * 1000 }
+  );
+  const contributorsListRef = useRef<HTMLElement>(null);
 
-  const { data: myContributor } = useSWR<Contributor>(() => myContributorId ? `/api/contributors/${myContributorId}` : null, {
-    focusThrottleInterval: 5 * 60 * 1000
-  });
-  useSetBirthdayContributor(birthday, myContributorId);
   const [copied, setCopied] = useState(false);
   const [newGift, setNewGift] = useState(initialNewGift)
   const [isAddingAnotherPerson, setIsAddingAnotherPerson] = useState(false);
   const [myName, setMyName] = useState('')
   const [isGiftAddPanelOpen, setIsGiftAddPanelOpen] = useState(birthday?.gifts?.length === 0);
-
   const showAddOtherPersonButton = !isAddingAnotherPerson && myContributorId;
   const showAddPersonBox = !myContributorId || isAddingAnotherPerson;
 
@@ -266,23 +252,11 @@ const GiftPage = ({ cookieContributorId, initialBirthday }: { cookieContributorI
   )
 }
 
-// GiftPage.getInitialProps = async (ctx: any) => {
-//   const birthdayId = ctx.query.id;
-//   const cookiesValue = cookies(ctx)
-
-//   if (!cookiesValue[`birthday-${birthdayId}`]) {
-//     return { cookieContributorId: null };
-//   }
-
-//   return {
-//     //@ts-ignore
-//     cookieContributorId: parseInt(cookiesValue[`birthday-${birthdayId}`]?.contributorId, 10)
-//   };
-// };
-
+// Sends next the possible paths for build time build
 export async function getStaticPaths() {
   const prisma = new PrismaClient();
   const birthdays = await prisma.birthday.findMany()
+  await prisma.disconnect();
   return {
     paths: birthdays.map(b => ({
       params: {
@@ -293,11 +267,13 @@ export async function getStaticPaths() {
   };
 }
 
-export async function getStaticProps({ params }) {
+// Allows next to pre build pages on build time
+export async function getStaticProps({ params }: any) {
   const prisma = new PrismaClient();
   const birthday = await prisma.birthday.findOne({
     where: { id: params.id }
   });
+  await prisma.disconnect();
   return {
     props: {
       initialBirthday: JSON.parse(JSON.stringify(birthday))

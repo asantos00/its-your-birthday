@@ -31,7 +31,6 @@ const GiftsList = ({ gifts, onDelete, collaboratorId, onUpvoteChange }: {
         {gifts.map((gift) => {
           const canUpvote = collaboratorId && gift.id;
           const isLoading = !gift.id;
-          console.log(gift.suggestor)
           const isOwner = gift.suggestor?.id === collaboratorId;
           return (
             <Box key={gift.id || "creating"} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
