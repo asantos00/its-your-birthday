@@ -23,7 +23,8 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
         },
         gifts: {
           include: {
-            upvotedBy: true
+            upvotedBy: true,
+            suggestor: true
           }
         },
       }

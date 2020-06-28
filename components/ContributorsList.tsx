@@ -51,7 +51,7 @@ const ContributorsList = ({
                 }
               </Box>
               <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
-                <Trash onClick={() => onDelete(contributor)} />
+                <Trash color="dark-4" onClick={() => onDelete(contributor)} />
               </Box>
               <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
                 <CheckBox

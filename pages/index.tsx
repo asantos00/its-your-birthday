@@ -11,9 +11,17 @@ import {
 import Router from "next/router";
 import { useState, useCallback } from "react";
 
+enum Status {
+  IDLE = 'idle',
+  LOADING = 'loading',
+  ERROR = 'error',
+}
+
 export default function Home() {
   const [name, setName] = useState("");
+  const [requestStatus, setRequestStatus] = useState<Status>(Status.IDLE);
   const createBirthday = useCallback(async () => {
+    setRequestStatus(Status.LOADING)
     const birthday = await fetch('/api/birthdays', {
       method: 'post',
       body: JSON.stringify({ name }),
@@ -21,9 +29,10 @@ export default function Home() {
         'content-type': "application/json"
       }
     }).then(r => r.json());
-
     Router.push(`/birthday/${birthday.id}`);
   }, [name])
+
+  const isLoading = requestStatus === Status.LOADING;
 
   return (
     <Main pad="large" height="100vh !important">
@@ -35,19 +44,25 @@ export default function Home() {
         <Text color="dark-3">Let's start by creating birthday gift poll</Text>
       </Box>
       <Box>
-        <FormField label="Birthday person">
-          <TextInput
-            placeholder="Name of the person"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </FormField>
-        <Button
-          onClick={createBirthday}
-          margin={{ top: "medium" }}
-          size="medium"
-          label="Hurray!"
-        />
+        {isLoading ? (
+          <Text>Creating...</Text>
+        ) : (
+            <>
+              <FormField label="Birthday person">
+                <TextInput
+                  placeholder="Name of the person"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </FormField>
+              <Button
+                onClick={createBirthday}
+                margin={{ top: "medium" }}
+                size="medium"
+                label="Hurray!"
+              />
+            </>
+          )}
       </Box>
     </Main>
   );

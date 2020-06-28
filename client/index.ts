@@ -42,6 +42,15 @@ export const deleteContributor = (contributorId: number) => {
   }).then(r => r.json())
 }
 
+export const deleteGift = (giftId: number) => {
+  return fetch(`/api/gifts/${giftId}`, {
+    method: 'DELETE',
+    headers: {
+      'content-type': "application/json"
+    }
+  }).then(r => r.json())
+}
+
 export const updateGiftUpvotedBy = (birthdayId: number, giftId: number, isUpvoted: boolean) => {
   return fetch(`/api/birthdays/${birthdayId}/gifts/${giftId}/upvotedBy`, {
     method: 'PATCH',

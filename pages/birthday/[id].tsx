@@ -15,19 +15,19 @@ import { useRouter } from "next/router";
 import copy from 'copy-to-clipboard';
 import { Birthday, Contributor, Gift } from '@prisma/client'
 
-import GiftsList, { GiftsWithUpvotes } from "../../components/GiftsList";
+import GiftsList, { GiftWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
 import AddPerson from "../../components/AddPerson";
 import * as Client from '../../client';
 
-export type GiftToCreate = Omit<GiftsWithUpvotes, "authorId" | "id" | "birthdayId">;
+export type GiftToCreate = Omit<GiftWithUpvotes, "authorId" | "id" | "birthdayId">;
 const initialNewGift: GiftToCreate = {
   description: '', url: '', upvotedBy: []
 }
 
 interface BirthdayWithContributorsAndGifts extends Birthday {
   contributors?: Contributor[],
-  gifts?: GiftsWithUpvotes[],
+  gifts?: GiftWithUpvotes[],
 }
 
 const useSetBirthdayContributor = (
@@ -104,7 +104,7 @@ const GiftPage = ({ cookieContributorId }: { cookieContributorId?: number }) => 
       inline: 'center'
     })
   }
-  const onUpvoteChange = (gift: GiftsWithUpvotes, isUpvoted: boolean) => {
+  const onUpvoteChange = (gift: GiftWithUpvotes, isUpvoted: boolean) => {
     mutate({
       ...birthday,
       gifts: birthday.gifts?.map(g => g.id === gift.id
@@ -118,6 +118,22 @@ const GiftPage = ({ cookieContributorId }: { cookieContributorId?: number }) => 
     }, false);
 
     Client.updateGiftUpvotedBy(birthday.id, gift.id, isUpvoted).then(revalidate)
+  }
+
+  const onDeleteGift = async (gift: GiftWithUpvotes) => {
+    const isSure = window.confirm(`Are you sure you want to delete ${gift.description}?`);
+    if (!isSure) {
+      return;
+    }
+
+    mutate({
+      ...birthday,
+      gifts: birthday.gifts?.filter(g => {
+        return g.id !== gift.id
+      })
+    }, false)
+
+    await Client.deleteGift(gift.id).then(revalidate);
   }
 
   const onDeleteContributor = async (contributor: Contributor) => {
@@ -198,6 +214,7 @@ const GiftPage = ({ cookieContributorId }: { cookieContributorId?: number }) => 
       <GiftsList
         gifts={birthday?.gifts}
         onUpvoteChange={onUpvoteChange}
+        onDelete={onDeleteGift}
         collaboratorId={myContributorId}
       />
       <ContributorsList
