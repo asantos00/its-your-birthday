@@ -17,7 +17,7 @@ async function patch(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const birthday = await prisma.birthday.update({
-    where: { id: parseInt(req.query.id as string, 10) },
+    where: { id: req.query.id as string },
     data: {
       contributors: {
         set: [req.body]
@@ -34,7 +34,7 @@ async function post(req: NextApiRequest, res: NextApiResponse) {
   const birthday = await prisma.contributor.create({
     data: {
       Birthday: {
-        connect: { id: parseInt(req.query.id as string, 10) }
+        connect: { id: req.query.id as string }
       },
       name: req.body.name,
       email: req.body.name

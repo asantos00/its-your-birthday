@@ -1,7 +1,3 @@
 # Prisma Migrate lockfile v1
 
-20200626234321-init
-20200627002356-birthday-date-optional
-20200627025135-add-upvotes-and-gift-suggestor
-20200627040507-add-created-at-collaborator
-20200627040543-remove-typo-model
+20200628191304-add-uuid-as-birthday-id

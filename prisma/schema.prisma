@@ -17,7 +17,7 @@ model Contributor {
   name          String
   hasPaid       Boolean   @default(false)
   Birthday      Birthday? @relation(fields: [birthdayId], references: [id])
-  birthdayId    Int?
+  birthdayId    String?
   suggestedGifs Gift[]    @relation("giftSuggestor")
   upvotes       Gift[]    @relation("upvotedBy")
   createdAt     DateTime  @default(now())
@@ -26,7 +26,7 @@ model Contributor {
 model Gift {
   id          Int           @default(autoincrement()) @id
   Birthday    Birthday?     @relation(fields: [birthdayId], references: [id])
-  birthdayId  Int?
+  birthdayId  String?
   url         String
   description String
   suggestor   Contributor?  @relation(name: "giftSuggestor", fields: [authorId], references: [id])
@@ -35,7 +35,7 @@ model Gift {
 }
 
 model Birthday {
-  id           Int           @default(autoincrement()) @id
+  id           String        @default(uuid()) @id
   createdAt    DateTime      @default(now())
   date         DateTime?
   person       String

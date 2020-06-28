@@ -13,7 +13,7 @@ import useSWR from 'swr';
 import cookies from 'next-cookies'
 import { useRouter } from "next/router";
 import copy from 'copy-to-clipboard';
-import { Birthday, Contributor, Gift } from '@prisma/client'
+import { Birthday, Contributor } from '@prisma/client'
 
 import GiftsList, { GiftWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";

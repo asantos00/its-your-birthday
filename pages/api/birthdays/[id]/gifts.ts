@@ -20,7 +20,7 @@ async function handle(req: NextApiRequest, res: NextApiResponse) {
   }
   try {
     const birthday = await prisma.birthday.update({
-      where: { id: parseInt(req.query.id as string, 10) },
+      where: { id: req.query.id as string },
       data: {
         gifts: {
           create: {

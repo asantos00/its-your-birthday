@@ -3,7 +3,7 @@ import { GiftToCreate } from '../pages/birthday/[id]'
 
 const logError = console.error;
 
-export const updateContributorHasPaid = (birthdayId: number, contributor: Contributor) => {
+export const updateContributorHasPaid = (birthdayId: string, contributor: Contributor) => {
   return fetch(`/api/birthdays/${birthdayId}/contributors/${contributor.id}/hasPaid`, {
     method: 'PATCH',
     body: JSON.stringify({ hasPaid: contributor.hasPaid }),
@@ -13,7 +13,7 @@ export const updateContributorHasPaid = (birthdayId: number, contributor: Contri
   }).then(r => r.json())
 }
 
-export const addGift = (birthdayId: number, gift: GiftToCreate) => {
+export const addGift = (birthdayId: string, gift: GiftToCreate) => {
   return fetch(`/api/birthdays/${birthdayId}/gifts`, {
     method: 'PATCH',
     body: JSON.stringify(gift),
@@ -23,7 +23,7 @@ export const addGift = (birthdayId: number, gift: GiftToCreate) => {
   }).then(r => r.json())
 }
 
-export const addContributor = (birthdayId: number, name: string) => {
+export const addContributor = (birthdayId: string, name: string) => {
   return fetch(`/api/birthdays/${birthdayId}/contributors`, {
     method: 'POST',
     body: JSON.stringify({ name }),
@@ -51,7 +51,7 @@ export const deleteGift = (giftId: number) => {
   }).then(r => r.json())
 }
 
-export const updateGiftUpvotedBy = (birthdayId: number, giftId: number, isUpvoted: boolean) => {
+export const updateGiftUpvotedBy = (birthdayId: string, giftId: number, isUpvoted: boolean) => {
   return fetch(`/api/birthdays/${birthdayId}/gifts/${giftId}/upvotedBy`, {
     method: 'PATCH',
     body: JSON.stringify({ isUpvoted }),

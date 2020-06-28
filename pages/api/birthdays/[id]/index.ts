@@ -14,7 +14,7 @@ export const config = {
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
   try {
     const birthday = await prisma.birthday.findOne({
-      where: { id: parseInt(req.query.id as string, 10) },
+      where: { id: req.query.id as string },
       include: {
         contributors: {
           orderBy: {
@@ -36,7 +36,7 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
       res.status(404).end();
     }
   } catch (e) {
-    res.status(400).end();
+    res.status(400).json({ message: e });
   }
 
   await prisma.disconnect()
