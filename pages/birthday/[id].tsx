@@ -14,7 +14,7 @@ import useSWR from 'swr';
 import cookies from 'next-cookies'
 import { useRouter } from "next/router";
 import copy from 'copy-to-clipboard';
-import { Birthday, Contributor } from '@prisma/client'
+import { Birthday, Contributor, PrismaClient } from '@prisma/client'
 
 import GiftsList, { GiftWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
@@ -49,11 +49,15 @@ const useSetBirthdayContributor = (
   }, [contributorId, birthday?.id]);
 }
 
-const GiftPage = ({ cookieContributorId }: { cookieContributorId?: number }) => {
+const GiftPage = ({ cookieContributorId, initialBirthday }: { cookieContributorId?: number, initialBirthday: any }) => {
   const { query } = useRouter();
   const contributorsListRef = useRef<HTMLElement>(null);
   const [myContributorId, setMyContributorId] = useState(cookieContributorId);
-  const { data: birthday, error, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
+  const { data: birthday, error, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(
+    () => query.id ? `/api/birthdays/${query.id}` : null,
+    { initialData: initialBirthday }
+  );
+
   const { data: myContributor } = useSWR<Contributor>(() => myContributorId ? `/api/contributors/${myContributorId}` : null, {
     focusThrottleInterval: 5 * 60 * 1000
   });
@@ -262,18 +266,43 @@ const GiftPage = ({ cookieContributorId }: { cookieContributorId?: number }) => 
   )
 }
 
-GiftPage.getInitialProps = async (ctx: any) => {
-  const birthdayId = ctx.query.id;
-  const cookiesValue = cookies(ctx)
+// GiftPage.getInitialProps = async (ctx: any) => {
+//   const birthdayId = ctx.query.id;
+//   const cookiesValue = cookies(ctx)
 
-  if (!cookiesValue[`birthday-${birthdayId}`]) {
-    return { cookieContributorId: null };
-  }
+//   if (!cookiesValue[`birthday-${birthdayId}`]) {
+//     return { cookieContributorId: null };
+//   }
 
+//   return {
+//     //@ts-ignore
+//     cookieContributorId: parseInt(cookiesValue[`birthday-${birthdayId}`]?.contributorId, 10)
+//   };
+// };
+
+export async function getStaticPaths() {
+  const prisma = new PrismaClient();
+  const birthdays = await prisma.birthday.findMany()
   return {
-    //@ts-ignore
-    cookieContributorId: parseInt(cookiesValue[`birthday-${birthdayId}`]?.contributorId, 10)
+    paths: birthdays.map(b => ({
+      params: {
+        id: b.id
+      }
+    })),
+    fallback: true
   };
-};
+}
+
+export async function getStaticProps({ params }) {
+  const prisma = new PrismaClient();
+  const birthday = await prisma.birthday.findOne({
+    where: { id: params.id }
+  });
+  return {
+    props: {
+      initialBirthday: JSON.parse(JSON.stringify(birthday))
+    }
+  }
+}
 
 export default GiftPage;
