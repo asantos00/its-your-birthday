@@ -61,7 +61,7 @@ const GiftPage = ({
     return (
       <Box width="100%" height="100%" align="center" justify="center">
         <Text size="large" margin="medium">
-          {error.message}
+          {error?.message?.toString()}
         </Text>
         <Anchor href={window.location.href}>
           Refresh
@@ -218,7 +218,7 @@ const GiftPage = ({
               You need to add your name to suggest a gift
             </Text>
           ) : null}
-          <Button disabled={!myContributorId} margin={{ top: "small" }} onClick={onAddGiftClick}>Add</Button>
+          <Button data-testid="add-gift" disabled={!myContributorId} margin={{ top: "small" }} onClick={onAddGiftClick}>Add</Button>
         </Box>
       </Collapsible>
       <GiftsList

@@ -51,10 +51,11 @@ const ContributorsList = ({
                 }
               </Box>
               <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
-                <Trash color="dark-4" onClick={() => onDelete(contributor)} />
+                <Trash data-testid={`delete-${contributor.name}`} color="dark-4" onClick={() => onDelete(contributor)} />
               </Box>
               <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
                 <CheckBox
+                  data-testid={`checkbox-${contributor.name}`}
                   checked={contributor.hasPaid}
                   onChange={(e) => {
                     onChange({ ...contributor, hasPaid: e.target.checked });

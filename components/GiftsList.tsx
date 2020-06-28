@@ -37,15 +37,16 @@ const GiftsList = ({ gifts, onDelete, collaboratorId, onUpvoteChange }: {
               <Box basis="50%" flex="grow">
                 <Anchor target="_blank" href={gift.url}><Text>{gift.description}</Text></Anchor>
               </Box>
-              <Text>({gift.upvotedBy?.length})</Text>
+              <Text data-testid={`count-${gift.description}`}>({gift.upvotedBy?.length})</Text>
               {isOwner ? (
                 <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
-                  <Trash color="dark-4" onClick={() => onDelete(gift)} />
+                  <Trash data-testid={`delete-${gift.description}`} color="dark-4" onClick={() => onDelete(gift)} />
                 </Box>
               ) : null}
               <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
                 {canUpvote ? (
                   <Like
+                    data-testid={`upvote-${gift.description}`}
                     onClick={() => onUpvoteChange(gift, !collaboratorUpvotedGift(gift.upvotedBy))}
                     color={collaboratorUpvotedGift(gift.upvotedBy) ? 'brand' : 'dark-4'} />
                 ) : isLoading ? (
