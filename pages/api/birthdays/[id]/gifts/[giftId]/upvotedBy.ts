@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from '@prisma/client';
+import { getCookieForBirthdayId } from '../../../util';
 
 const prisma = new PrismaClient();
 
@@ -13,10 +14,10 @@ export const config = {
 
 async function handle(req: NextApiRequest, res: NextApiResponse) {
   const operation = req.body.isUpvoted ? 'connect' : 'disconnect';
-  const { contributorId } = JSON.parse(req.cookies[`birthday-${req.query.id}`]);
+  const { contributorId } = getCookieForBirthdayId(req, req.query.id as string);
 
   const contributor = await prisma.gift.update({
-    where: { id: parseInt(req.query.giftId as string) },
+    where: { id: parseInt(req.query.giftId as string, 10) },
     data: {
       upvotedBy: {
         [operation]: { id: parseInt(contributorId, 10) },

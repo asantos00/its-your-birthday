@@ -1,7 +1,23 @@
-import { Box, Text, CheckBox, Header } from "grommet";
-import { useMemo } from "react";
+import { Box, Text, CheckBox, Header, Anchor } from "grommet";
+import { useMemo, Ref, RefObject, RefCallback, HtmlHTMLAttributes, MutableRefObject } from "react";
+import { Contributor } from "@prisma/client";
+import { CloudUpload } from "grommet-icons";
 
-const ContributorsList = ({ contributors, myContributorId, onChange, listRef }) => {
+interface ContributorsListProps {
+  contributors: Contributor[]
+  myContributorId?: number;
+  onChange: (contributor: Contributor) => void
+  onThisIsMe: (contributor: Contributor) => void
+  listRef?: any
+}
+
+const ContributorsList = ({
+  contributors,
+  myContributorId,
+  onChange,
+  onThisIsMe,
+  listRef
+}: ContributorsListProps) => {
   if (!contributors?.length) {
     return null;
   }
@@ -15,24 +31,33 @@ const ContributorsList = ({ contributors, myContributorId, onChange, listRef }) 
         <Text color="dark-1">Contributed ({hasContributed.length}/{contributors.length})</Text>
       </Header>
       <Box ref={listRef} pad="large">
-        {contributors.map(contributor => (
-          <Box key={contributor.id} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
-            <Box basis="70%" flex="grow">
-              <Text
-                color={myContributorId === contributor.id ? 'brand' : ''}
-              >
-                {contributor.name}
-              </Text>
+        {contributors.map(contributor => {
+          return (
+            <Box key={contributor.id} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
+              <Box basis="70%" flex="grow" direction="row" align="center">
+                <Text
+                  color={myContributorId === contributor.id ? 'brand' : ''}
+                >
+                  {contributor.name}
+                </Text>
+                {!myContributorId && (
+                  <Text size="small" margin="small" onClick={() => onThisIsMe(contributor)}>
+                    <Anchor>
+                      This is me
+                  </Anchor>
+                  </Text>)
+                }
+              </Box>
+              <Box basis="5%" margin={{ horizontal: "medium" }}>
+                <CheckBox
+                  checked={contributor.hasPaid}
+                  onChange={(e) => {
+                    onChange({ ...contributor, hasPaid: e.target.checked });
+                  }} />
+              </Box>
             </Box>
-            <Box basis="5%" margin={{ horizontal: "medium" }}>
-              <CheckBox
-                checked={contributor.hasPaid}
-                onChange={(e) => {
-                  onChange({ ...contributor, hasPaid: e.target.checked });
-                }} />
-            </Box>
-          </Box>
-        ))}
+          )
+        })}
       </Box>
     </>)
 }

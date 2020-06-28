@@ -1,124 +1,125 @@
+import { useState, useRef, useEffect } from "react";
 import {
   Main,
-  Header,
   Text,
   Box,
   FormField,
   TextInput,
   Button,
 } from "grommet"
+import { ShareOption } from 'grommet-icons';
 import useSWR from 'swr';
-import { ShareOption, Add } from 'grommet-icons';
-import { useState, useRef, useEffect } from "react";
+import cookies from 'next-cookies'
 import { useRouter } from "next/router";
 import copy from 'copy-to-clipboard';
+import { Birthday, Contributor, Gift } from '@prisma/client'
+
 import GiftsList, { GiftsWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
-import { Birthday, Contributor, Gift } from '@prisma/client'
-import cookies from 'next-cookies'
+import AddPerson from "../../components/AddPerson";
+import * as Client from '../../client';
 
-const initialNewGift = { description: '', url: '' }
+type GiftToCreate = Omit<GiftsWithUpvotes, "authorId" | "id" | "birthdayId">;
+const initialNewGift: GiftToCreate = {
+  description: '', url: '', upvotedBy: []
+}
 
 interface BirthdayWithContributorsAndGifts extends Birthday {
   contributors?: Contributor[],
   gifts?: GiftsWithUpvotes[]
 }
 
-const GiftPage = ({ cookieContributorId }) => {
-  const contributorsListRef = useRef<HTMLElement>(null);
-  const [myContributorId, setMyContributorId] = useState(cookieContributorId);
-  const { query } = useRouter();
-  const { data: birthday, mutate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
-  const [copied, setCopied] = useState(false);
-  const [newGift, setNewGift] = useState(initialNewGift)
-  const [forceShowAddName, setForceShowAddName] = useState(false);
-
-  const [myName, setMyName] = useState('')
-
+const useSetBirthdayContributor = (birthdayId: number, contributorId: number) => {
   useEffect(() => {
-    if (!birthday || !myContributorId) {
+    if (!birthdayId || !contributorId) {
       return;
     }
 
     const date = new Date();
     date.setMonth(date.getMonth() + 1);
-    const saveToCookie = { contributorId: myContributorId };
-    let cookieValue = `birthday-${birthday.id}=${JSON.stringify(saveToCookie)};expires=${date.toUTCString()};path=/`;
+    const saveToCookie = { contributorId };
+    let cookieValue = `birthday-${birthdayId}=${JSON.stringify(saveToCookie)};expires=${date.toUTCString()};path=/`;
     document.cookie = cookieValue;
-  }, [myContributorId, birthday?.id]);
+  }, [contributorId, birthdayId]);
+}
 
-  const onChangeContributors = async (contributor: Contributor) => {
-    await fetch(`/api/birthdays/${birthday?.id}/contributors/${contributor.id}/hasPaid`, {
-      method: 'PATCH',
-      body: JSON.stringify({ hasPaid: contributor.hasPaid }),
-      headers: {
-        'content-type': "application/json"
-      }
-    }).then(r => r.json())
-      .then(contributor => {
-        mutate({
-          ...birthday,
-          contributors: birthday.contributors.map(c => {
-            return c.id === contributor.id ? contributor : c;
-          })
-        })
+const GiftPage = ({ cookieContributorId }: { cookieContributorId?: number }) => {
+  const { query } = useRouter();
+  const contributorsListRef = useRef<HTMLElement>(null);
+  const [myContributorId, setMyContributorId] = useState(cookieContributorId);
+  const { data: birthday, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(() => query.id ? `/api/birthdays/${query.id}` : null);
+  const { data: myContributor } = useSWR<Contributor>(() => myContributorId ? `/api/contributors/${myContributorId}` : null, {
+    focusThrottleInterval: 5 * 60 * 1000
+  });
+  useSetBirthdayContributor(birthday?.id, myContributorId);
+  const [copied, setCopied] = useState(false);
+  const [newGift, setNewGift] = useState(initialNewGift)
+  const [isAddingAnotherPerson, setIsAddingAnotherPerson] = useState(false);
+  const [myName, setMyName] = useState('')
+
+  const showAddOtherPersonButton = !isAddingAnotherPerson && myContributorId;
+  const showAddPersonBox = !myContributorId || isAddingAnotherPerson;
+
+  const onChangeContributors = (contributor: Contributor) => {
+    mutate({
+      ...birthday,
+      contributors: birthday.contributors.map(c => {
+        return c.id === contributor.id ? contributor : c;
       })
+    }, false)
+
+    Client.updateContributorHasPaid(birthday.id, contributor).then(revalidate)
   }
-  const onChangeGifts = async (gift) => {
-    await fetch(`/api/birthdays/${birthday?.id}/gifts`, {
-      method: 'PATCH',
-      body: JSON.stringify(gift),
-      headers: {
-        'content-type': "application/json"
-      }
+  const onChangeGifts = (gift: GiftsWithUpvotes) => {
+    mutate({ ...birthday, gifts: birthday.gifts.concat(gift) }, false)
+
+    Client.addGift(birthday.id, gift).then(revalidate);
+  }
+  const onAddName = async (isAddingOtherPerson: boolean) => {
+    if (!isAddingOtherPerson) {
+      mutate({
+        ...birthday,
+        contributors: birthday.contributors.concat(myContributor)
+      }, false);
+    }
+
+    const contributor = await Client.addContributor(birthday.id, myName)
+    revalidate()
+    setIsAddingAnotherPerson(false);
+    if (!isAddingOtherPerson && !myContributor) {
+      setMyContributorId(contributor.id)
+    }
+    setMyName('');
+    contributorsListRef.current.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'center'
     })
-
-    mutate({ ...birthday, gifts: birthday.gifts.concat(gift) })
   }
-
-  const onAddName = async (isOtherPersonName) => {
-    fetch(`/api/birthdays/${birthday.id}/contributors`, {
-      method: 'POST',
-      body: JSON.stringify({ name: myName }),
-      headers: {
-        'content-type': "application/json"
-      }
-    }).then(r => r.json())
-      .then(contributor => {
-        setForceShowAddName(false);
-        if (!isOtherPersonName) {
-          setMyContributorId(contributor.id);
+  const onUpvoteChange = (gift: GiftsWithUpvotes, isUpvoted) => {
+    mutate({
+      ...birthday,
+      gifts: birthday.gifts.map(g => g.id === gift.id
+        ? {
+          ...g, upvotedBy: isUpvoted
+            ? gift.upvotedBy.concat(myContributor)
+            : gift.upvotedBy.filter(c => c.id !== myContributor.id)
         }
-        setMyName('');
-        mutate({
-          ...birthday,
-          contributors: birthday.contributors.concat(contributor)
-        })
-        contributorsListRef.current.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'center'
-        })
-      })
+        : g
+      )
+    }, false);
+
+    Client.updateGiftUpvotedBy(birthday.id, gift.id, isUpvoted).then(revalidate)
   }
 
-  const onUpvoteChange = async (gift: Gift, isUpvoted) => {
-    fetch(`/api/birthdays/${birthday.id}/gifts/${gift.id}/upvotedBy`, {
-      method: 'PATCH',
-      body: JSON.stringify({ isUpvoted }),
-      headers: {
-        'content-type': "application/json"
-      }
-    }).then(r => r.json())
-      .then(gift => {
-        mutate({
-          ...birthday,
-          gifts: birthday.gifts.map(g => g.id === gift.id
-            ? { ...g, ...gift }
-            : g
-          )
-        })
-      })
+  const onShareClick = () => {
+    copy(window.location.href)
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000)
+  }
+  const onAddGiftClick = () => {
+    onChangeGifts(newGift);
+    setNewGift(initialNewGift);
   }
 
   if (!birthday) {
@@ -146,26 +147,22 @@ const GiftPage = ({ cookieContributorId }) => {
         direction="row"
         justify="between"
       >
-        <Text weight="bold">Happy birthday to {birthday?.person}!</Text>
-        <ShareOption onClick={() => {
-          copy(window.location.href)
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000)
-        }} />
+        <Text weight="bold">It's {birthday?.person}'s birthday !</Text>
+        <ShareOption onClick={onShareClick} />
       </Box>
       <Box color="white" pad={{ top: "medium", horizontal: "large", bottom: "large" }}>
-        <FormField label="What is it?">
-          <TextInput placeholder="Insert name of the item" onChange={e => setNewGift({ ...newGift, description: e.target.value })} value={newGift.description} />
-        </FormField>
         <FormField label="I have a gift idea">
-          <TextInput placeholder="Insert gift link" onChange={e => setNewGift({ ...newGift, url: e.target.value })} value={newGift.url} />
+          <TextInput
+            placeholder="Name of the item"
+            onChange={e => setNewGift({ ...newGift, description: e.target.value })}
+            value={newGift.description} />
         </FormField>
-        <Button margin={{ top: "small" }} onClick={() => {
-          onChangeGifts(newGift);
-          setNewGift(initialNewGift);
-        }}>
-          Add
-        </Button>
+        <FormField label="URL">
+          <TextInput
+            placeholder="Link to the item"
+            onChange={e => setNewGift({ ...newGift, url: e.target.value })} value={newGift.url} />
+        </FormField>
+        <Button margin={{ top: "small" }} onClick={onAddGiftClick}>Add</Button>
       </Box>
       <GiftsList
         gifts={birthday?.gifts}
@@ -175,35 +172,19 @@ const GiftPage = ({ cookieContributorId }) => {
       <ContributorsList
         myContributorId={myContributorId}
         listRef={contributorsListRef} contributors={birthday?.contributors}
+        onThisIsMe={(contributor) => setMyContributorId(contributor.id)}
         onChange={onChangeContributors} />
-      {!forceShowAddName ? (
-        <Button margin="small" size="medium" onClick={() => setForceShowAddName(true)}>
+      {showAddOtherPersonButton ? (
+        <Button
+          margin="small"
+          size="medium"
+          onClick={() => setIsAddingAnotherPerson(true)}>
           Add a person name to the list
         </Button>
       ) : null}
-      {!myContributorId || forceShowAddName ? (
-        <Box style={{ zIndex: 0 }}>
-          <Box
-            direction="row"
-            flex="grow"
-            justify="between"
-            align="end"
-            background="white"
-            style={{
-              position: 'fixed',
-              bottom: 0,
-              width: '100%'
-            }} pad="medium"
-            elevation="reverse" >
-            <Box flex="grow" margin={{ right: "medium" }}>
-              <FormField label="Add a name to the list" margin={{ bottom: "0" }}>
-                <TextInput placeholder="Insert the name" value={myName} onChange={e => setMyName(e.target.value)} />
-              </FormField>
-            </Box>
-            <Button style={{ height: 48, width: 48, padding: 0 }} size="small" icon={<Add size="medium" />} onClick={() => onAddName(forceShowAddName)} />
-          </Box>
-        </Box>) : null
-      }
+      {showAddPersonBox ? (
+        <AddPerson name={myName} onChange={setMyName} onSubmit={() => onAddName(isAddingAnotherPerson)} />
+      ) : null}
     </Main >
   )
 }

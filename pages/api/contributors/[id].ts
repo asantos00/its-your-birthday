@@ -12,13 +12,11 @@ export const config = {
 }
 
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
-  const createdBirthday = await prisma.birthday.create({
-    data: {
-      person: req.body.name,
-    }
+  const contributor = await prisma.contributor.findOne({
+    where: { id: parseInt(req.query.id as string, 10) }
   })
 
-  res.json(createdBirthday);
+  res.json(contributor);
 
   await prisma.disconnect()
 }
