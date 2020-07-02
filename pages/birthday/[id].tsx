@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Main,
   Text,
@@ -17,10 +17,12 @@ import { Birthday, Contributor, PrismaClient } from '@prisma/client'
 
 import GiftsList, { GiftWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
+import AuthenticatedRoute from "../../components/AuthenticatedRoute";
 import AddPerson from "../../components/AddPerson";
 import * as Client from '../../client';
 import Link from 'next/link';
 import useContributorIdFromCookie from "../../hooks/useContributorIdFromCookie";
+import { useAuthentication } from "../../hooks/useAuthentication";
 
 export type GiftToCreate = Omit<GiftWithUpvotes, "authorId" | "id" | "birthdayId">;
 const initialNewGift: GiftToCreate = {
@@ -32,11 +34,18 @@ interface BirthdayWithContributorsAndGifts extends Birthday {
   gifts?: GiftWithUpvotes[],
 }
 
+const Loading = () => (
+  <Box width="100%" height="100%" align="center" justify="center">
+    <Text size="large" margin="medium">Loading...</Text>
+  </Box>
+)
+
 const GiftPage = ({
   initialBirthday
 }: {
   initialBirthday: any
 }) => {
+  const { user, token } = useAuthentication();
   const { query } = useRouter();
   const [myContributorId, setMyContributorId] = useContributorIdFromCookie(query.id as string);
   const { data: birthday, error, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(
@@ -52,10 +61,10 @@ const GiftPage = ({
   const [copied, setCopied] = useState(false);
   const [newGift, setNewGift] = useState(initialNewGift)
   const [isAddingAnotherPerson, setIsAddingAnotherPerson] = useState(false);
-  const [myName, setMyName] = useState('')
+  const [name, setName] = useState('')
   const [isGiftAddPanelOpen, setIsGiftAddPanelOpen] = useState(birthday?.gifts?.length === 0);
-  const showAddOtherPersonButton = !isAddingAnotherPerson && myContributorId;
-  const showAddPersonBox = !myContributorId || isAddingAnotherPerson;
+  const showAddOtherPersonButton = !isAddingAnotherPerson;
+  const showAddPersonBox = isAddingAnotherPerson;
 
   if (error) {
     return (
@@ -76,11 +85,7 @@ const GiftPage = ({
   }
 
   if (!birthday) {
-    return (
-      <Box width="100%" height="100%" align="center" justify="center">
-        <Text size="large" margin="medium">Loading...</Text>
-      </Box>
-    )
+    return <Loading />
   }
 
   const onChangeContributors = (contributor: Contributor) => {
@@ -100,10 +105,10 @@ const GiftPage = ({
     setIsGiftAddPanelOpen(false);
     Client.addGift(birthday.id, gift).then(revalidate);
   }
-  const onAddName = async (isAddingOtherPerson: boolean) => {
-    const contributor = await Client.addContributor(birthday.id, myName)
+  const onAddName = async (isAddingOtherPerson: boolean, name: string) => {
+    const contributor = await Client.addContributor(birthday.id, name, token)
     await revalidate()
-    setMyName('');
+    setName('');
     setIsAddingAnotherPerson(false);
     if (!isAddingOtherPerson && !myContributor) {
       setMyContributorId(contributor.id)
@@ -178,77 +183,84 @@ const GiftPage = ({
   }
 
   return (
-    <Main pad={{ bottom: "100px" }}>
-      <Box
-        animation={"slideDown"}
-        pad="small"
-        background="accent-1"
-        style={{ width: '100%', position: 'absolute', top: 0, display: copied ? "block" : "none" }}
-      >
-        <Text color="white">Link copied to clipboard!</Text>
-      </Box>
-      <Box
-        color="white" style={{ position: 'relative' }}
-        margin={{ top: "medium" }}
-        pad={{ vertical: "medium", horizontal: "large" }}
-        direction="row"
-        justify="between"
-      >
-        <Text weight="bold">It's {birthday?.person}'s birthday !</Text>
-        <ShareOption onClick={onShareClick} />
-      </Box>
-      <Box color="white" pad={{ top: "medium", horizontal: "large", bottom: "large" }}>
-        <Button onClick={() => setIsGiftAddPanelOpen(!isGiftAddPanelOpen)}>I have a gift idea</Button>
-      </Box>
-      <Collapsible open={isGiftAddPanelOpen}>
-        <Box color="white" pad={{ top: "medium", horizontal: "large", bottom: "large" }}>
-          <FormField label="I have a gift idea">
-            <TextInput
-              placeholder="Name of the item"
-              onChange={e => setNewGift({ ...newGift, description: e.target.value })}
-              value={newGift.description} />
-          </FormField>
-          <FormField label="URL">
-            <TextInput
-              placeholder="Link to the item"
-              onChange={e => setNewGift({ ...newGift, url: e.target.value })} value={newGift.url} />
-          </FormField>
-          {!myContributorId ? (
-            <Text size="small" color="dark-3" margin={{ top: "medium" }}>
-              You need to add your name to suggest a gift
-            </Text>
-          ) : null}
-          <Button data-testid="add-gift" disabled={!myContributorId} margin={{ top: "small" }} onClick={onAddGiftClick}>Add</Button>
+    <AuthenticatedRoute>
+      <Main pad={{ bottom: "100px" }}>
+        <Box
+          animation={"slideDown"}
+          pad="small"
+          background="accent-1"
+          style={{ width: '100%', position: 'absolute', top: 0, display: copied ? "block" : "none" }}
+        >
+          <Text color="white">Link copied to clipboard!</Text>
         </Box>
-      </Collapsible>
-      <GiftsList
-        gifts={birthday?.gifts}
-        onUpvoteChange={onUpvoteChange}
-        onDelete={onDeleteGift}
-        collaboratorId={myContributorId}
-      />
-      <ContributorsList
-        myContributorId={myContributorId}
-        listRef={contributorsListRef} contributors={birthday?.contributors}
-        onThisIsMe={(contributor) => setMyContributorId(contributor.id)}
-        onDelete={onDeleteContributor}
-        onChange={onChangeContributors} />
-      {showAddOtherPersonButton ? (
-        <Button
-          margin="small"
-          size="medium"
-          onClick={() => setIsAddingAnotherPerson(true)}>
-          Add another person
-        </Button>
-      ) : null}
-      {showAddPersonBox ? (
-        <AddPerson
-          name={myName}
-          label={isAddingAnotherPerson ? 'Insert the name of the person' : 'My name is'}
-          onChange={setMyName}
-          onSubmit={() => onAddName(isAddingAnotherPerson)} />
-      ) : null}
-    </Main >
+        <Box
+          color="white" style={{ position: 'relative' }}
+          margin={{ top: "medium" }}
+          pad={{ vertical: "medium", horizontal: "large" }}
+          direction="row"
+          justify="between"
+        >
+          <Text weight="bold">It's {birthday?.person}'s birthday !</Text>
+          <ShareOption onClick={onShareClick} />
+        </Box>
+        <Box color="white" pad={{ top: "medium", horizontal: "large", bottom: "large" }}>
+          <Button onClick={() => setIsGiftAddPanelOpen(!isGiftAddPanelOpen)}>I have a gift idea</Button>
+        </Box>
+        <Collapsible open={isGiftAddPanelOpen}>
+          <Box color="white" pad={{ top: "medium", horizontal: "large", bottom: "large" }}>
+            <FormField label="I have a gift idea">
+              <TextInput
+                placeholder="Name of the item"
+                onChange={e => setNewGift({ ...newGift, description: e.target.value })}
+                value={newGift.description} />
+            </FormField>
+            <FormField label="URL">
+              <TextInput
+                placeholder="Link to the item"
+                onChange={e => setNewGift({ ...newGift, url: e.target.value })} value={newGift.url} />
+            </FormField>
+            {!myContributorId ? (
+              <Text size="small" color="dark-3" margin={{ top: "medium" }}>
+                You need to add your name to suggest a gift
+              </Text>
+            ) : null}
+            <Button data-testid="add-gift" disabled={!myContributorId} margin={{ top: "small" }} onClick={onAddGiftClick}>Add</Button>
+          </Box>
+        </Collapsible>
+        <GiftsList
+          gifts={birthday?.gifts}
+          onUpvoteChange={onUpvoteChange}
+          onDelete={onDeleteGift}
+          collaboratorId={myContributorId}
+        />
+        <ContributorsList
+          myContributorId={myContributorId}
+          listRef={contributorsListRef} contributors={birthday?.contributors}
+          onThisIsMe={(contributor) => setMyContributorId(contributor.id)}
+          onDelete={onDeleteContributor}
+          onChange={onChangeContributors} />
+        {!myContributorId ? (
+          <Button color="accent-1" size="medium" margin={{ horizontal: 'small' }} onClick={() => onAddName(false, user?.name)}>
+            Add me to the list
+          </Button>
+        ) : null}
+        {showAddOtherPersonButton ? (
+          <Button
+            margin="small"
+            size="medium"
+            onClick={() => setIsAddingAnotherPerson(true)}>
+            Add another person
+          </Button>
+        ) : null}
+        {showAddPersonBox ? (
+          <AddPerson
+            name={name}
+            label={'Insert the name of the person'}
+            onChange={setName}
+            onSubmit={() => onAddName(isAddingAnotherPerson, name)} />
+        ) : null}
+      </Main >
+    </AuthenticatedRoute>
   )
 }
 

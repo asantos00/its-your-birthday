@@ -10,6 +10,7 @@ import {
 } from "grommet";
 import Router from "next/router";
 import { useState, useCallback } from "react";
+import { useAuthentication } from '../hooks/useAuthentication';
 
 enum Status {
   IDLE = 'idle',
@@ -20,17 +21,28 @@ enum Status {
 export default function Home() {
   const [name, setName] = useState("");
   const [requestStatus, setRequestStatus] = useState<Status>(Status.IDLE);
+  const { token, login, isAuthenticated } = useAuthentication();
   const createBirthday = useCallback(async () => {
     setRequestStatus(Status.LOADING)
     const birthday = await fetch('/api/birthdays', {
       method: 'post',
       body: JSON.stringify({ name }),
       headers: {
-        'content-type': "application/json"
+        'content-type': "application/json",
+        'Authorization': `Bearer ${token}`
       }
-    }).then(r => r.json());
+    })
+      .then(r => {
+        if (r.status !== 201) {
+          return Promise.reject(r.json());
+        }
+
+        return r;
+      })
+      .then(r => r.json());
+
     Router.push(`/birthday/${birthday.id}`);
-  }, [name])
+  }, [name, token])
 
   const isLoading = requestStatus === Status.LOADING;
 
@@ -55,12 +67,22 @@ export default function Home() {
                   onChange={(e) => setName(e.target.value)}
                 />
               </FormField>
-              <Button
-                onClick={createBirthday}
-                margin={{ top: "medium" }}
-                size="medium"
-                label="Hurray!"
-              />
+              {isAuthenticated ? (
+                <Button
+                  onClick={createBirthday}
+                  margin={{ top: "medium" }}
+                  size="medium"
+                  label="Hurray!"
+                />
+              ) : (
+                  <Button
+                    onClick={() => login()}
+                    margin={{ top: "medium" }}
+                    color="accent-1"
+                    size="medium"
+                    label="Login"
+                  />
+                )}
             </>
           )}
       </Box>

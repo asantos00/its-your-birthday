@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { NextApiRequest, NextApiResponse } from 'next';
-
-const prisma = new PrismaClient();
+import { NextApiResponse } from 'next';
+import { NextAuthenticatedRequest, authorizedRoute } from '../auth';
 
 export const config = {
   api: {
@@ -11,7 +10,9 @@ export const config = {
   },
 }
 
-export default async function handle(req: NextApiRequest, res: NextApiResponse) {
+const prisma = new PrismaClient();
+
+async function handle(req: NextAuthenticatedRequest, res: NextApiResponse) {
   const createdBirthday = await prisma.birthday.create({
     data: {
       person: req.body.name,
@@ -22,3 +23,5 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
 
   await prisma.disconnect()
 }
+
+export default authorizedRoute(handle);

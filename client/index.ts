@@ -23,12 +23,13 @@ export const addGift = (birthdayId: string, gift: GiftToCreate) => {
   }).then(r => r.json())
 }
 
-export const addContributor = (birthdayId: string, name: string) => {
+export const addContributor = (birthdayId: string, name: string, token: string) => {
   return fetch(`/api/birthdays/${birthdayId}/contributors`, {
     method: 'POST',
     body: JSON.stringify({ name }),
     headers: {
-      'content-type': "application/json"
+      'content-type': "application/json",
+      'authorization': `Bearer ${token}`
     }
   }).then(r => r.json())
 }

@@ -1,8 +1,8 @@
 import 'sanitize.css';
-import { Grommet, ThemeType, Header, Text } from 'grommet';
-import Head from 'next/head';
-import Link from 'next/link';
+import { Grommet, ThemeType, Text } from 'grommet';
 import { SWRConfig } from 'swr';
+import { Auth0Provider } from "@auth0/auth0-react";
+import Header from '../components/Header';
 
 const theme: ThemeType = {
   global: {
@@ -101,26 +101,27 @@ const theme: ThemeType = {
 };
 
 function App({ Component, pageProps }) {
+  console.log(typeof window !== 'undefined' && window.location.origin)
   return (
     <Grommet theme={theme} themeMode="light">
-      <Header background="brand" pad="large" elevation="small">
-        <Link href="/">
-          <a style={{ textDecoration: 'none' }}>
-            <Text color="white" weight="bold">it's your birthday</Text>
-          </a>
-        </Link>
-      </Header>
-      <SWRConfig value={{
-        fetcher: (url, options) => fetch(url, options).then(async (r) => {
-          if (r.status >= 400) {
-            throw await r.json();
-          }
+      <Auth0Provider
+        domain="its-your-birthday.eu.auth0.com"
+        clientId="L8rqEyLpnmtgSpY2Mv4ncWyX3Fuh1XQa"
+        redirectUri={typeof window !== 'undefined' && window.location.origin}
+      >
+        <SWRConfig value={{
+          fetcher: (url, options) => fetch(url, options).then(async (r) => {
+            if (r.status >= 400) {
+              throw await r.json();
+            }
 
-          return r.json();
-        })
-      }}>
-        <Component {...pageProps} />
-      </SWRConfig>
+            return r.json();
+          })
+        }}>
+          <Header />
+          <Component {...pageProps} />
+        </SWRConfig>
+      </Auth0Provider>
     </Grommet >
   )
 }
