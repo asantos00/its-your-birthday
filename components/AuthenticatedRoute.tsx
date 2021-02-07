@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { FC, ReactNode } from 'react';
 import { useAuthentication } from '../hooks/useAuthentication';
 import { Main, Box, Text } from 'grommet';
 
-const AuthenticatedRoute = ({ children }) => {
+const AuthenticatedRoute: React.FunctionComponent<any> = (props) => {
   const { isAuthenticated, isLoading } = useAuthentication();
 
   if (isLoading) {
@@ -25,7 +25,7 @@ const AuthenticatedRoute = ({ children }) => {
     )
   }
 
-  return children
+  return props.children || null;
 }
 
 export default AuthenticatedRoute;

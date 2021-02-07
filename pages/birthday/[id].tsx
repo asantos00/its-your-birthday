@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import Head from 'next/head'
 import {
   Main,
   Text,
@@ -18,20 +19,19 @@ import { Birthday, Contributor, PrismaClient } from '@prisma/client'
 import GiftsList, { GiftWithUpvotes } from "../../components/GiftsList";
 import ContributorsList from "../../components/ContributorsList";
 import AuthenticatedRoute from "../../components/AuthenticatedRoute";
-import AddPerson from "../../components/AddPerson";
 import * as Client from '../../client';
 import Link from 'next/link';
-import useContributorIdFromCookie from "../../hooks/useContributorIdFromCookie";
 import { useAuthentication } from "../../hooks/useAuthentication";
 
 export type GiftToCreate = Omit<GiftWithUpvotes, "authorId" | "id" | "birthdayId">;
 const initialNewGift: GiftToCreate = {
-  description: '', url: '', upvotedBy: []
+  description: '', url: '', upvotedBy: [], authorEmail: ''
 }
 
 interface BirthdayWithContributorsAndGifts extends Birthday {
   contributors?: Contributor[],
   gifts?: GiftWithUpvotes[],
+  paidBy?: Contributor[],
 }
 
 const Loading = () => (
@@ -47,24 +47,17 @@ const GiftPage = ({
 }) => {
   const { user, token } = useAuthentication();
   const { query } = useRouter();
-  const [myContributorId, setMyContributorId] = useContributorIdFromCookie(query.id as string);
   const { data: birthday, error, mutate, revalidate } = useSWR<BirthdayWithContributorsAndGifts>(
-    `/api/birthdays/${query.id}`,
-    { initialData: initialBirthday, revalidateOnMount: true }
-  );
-  const { data: myContributor } = useSWR<Contributor>(
-    () => myContributorId ? `/api/contributors/${myContributorId}` : null,
-    { focusThrottleInterval: 5 * 60 * 1000 }
+    token ? [`/api/birthdays/${query.id}`, token] : null,
+    { initialData: initialBirthday, revalidateOnMount: true, fetcher: Client.authenticatedFetcher }
   );
   const contributorsListRef = useRef<HTMLElement>(null);
-
   const [copied, setCopied] = useState(false);
   const [newGift, setNewGift] = useState(initialNewGift)
-  const [isAddingAnotherPerson, setIsAddingAnotherPerson] = useState(false);
-  const [name, setName] = useState('')
   const [isGiftAddPanelOpen, setIsGiftAddPanelOpen] = useState(birthday?.gifts?.length === 0);
-  const showAddOtherPersonButton = !isAddingAnotherPerson;
-  const showAddPersonBox = isAddingAnotherPerson;
+  const userOnList = useMemo(() => birthday?.contributors?.some(contributor => {
+    return contributor.email === user?.email
+  }), [birthday, user]);
 
   if (error) {
     return (
@@ -88,31 +81,35 @@ const GiftPage = ({
     return <Loading />
   }
 
-  const onChangeContributors = (contributor: Contributor) => {
+  const onChangeContributors = ({ hasPaid }: { hasPaid: boolean }) => {
+    Client.updateContributorHasPaid(birthday.id, hasPaid, token).then(revalidate)
+
+    if (!hasPaid) {
+      mutate({
+        ...birthday,
+        paidBy: birthday.paidBy?.filter(userPaid => {
+          return userPaid.email !== user.email
+        })
+      }, false)
+
+      return;
+    }
+
     mutate({
       ...birthday,
-      contributors: birthday.contributors?.map(c => {
-        return c.id === contributor.id ? contributor : c;
-      })
+      paidBy: birthday.paidBy?.concat({ email: user.email, name: user.name, createdAt: new Date() })
     }, false)
-
-    Client.updateContributorHasPaid(birthday.id, contributor).then(revalidate)
   }
   const onChangeGifts = (gift: GiftToCreate) => {
     //@ts-ignore
     mutate({ ...birthday, gifts: birthday.gifts?.concat(gift) }, false)
 
     setIsGiftAddPanelOpen(false);
-    Client.addGift(birthday.id, gift).then(revalidate);
+    Client.addGift(birthday.id, gift, token).then(revalidate);
   }
-  const onAddName = async (isAddingOtherPerson: boolean, name: string) => {
-    const contributor = await Client.addContributor(birthday.id, name, token)
+  const onAddName = async (email: string) => {
+    await Client.addContributor(birthday.id, email, token);
     await revalidate()
-    setName('');
-    setIsAddingAnotherPerson(false);
-    if (!isAddingOtherPerson && !myContributor) {
-      setMyContributorId(contributor.id)
-    }
     contributorsListRef?.current?.scrollIntoView({
       behavior: 'smooth',
       block: 'center',
@@ -125,14 +122,14 @@ const GiftPage = ({
       gifts: birthday.gifts?.map(g => g.id === gift.id
         ? {
           ...g, upvotedBy: isUpvoted
-            ? gift.upvotedBy.concat(myContributor || [])
-            : gift.upvotedBy.filter(c => c.id !== myContributor?.id)
+            ? gift.upvotedBy.concat({ email: user.email, name: user.email, createdAt: new Date() } || [])
+            : gift.upvotedBy.filter(userUpvoted => userUpvoted.email !== user.email)
         }
         : g
       )
     }, false);
 
-    Client.updateGiftUpvotedBy(birthday.id, gift.id, isUpvoted).then(revalidate)
+    Client.updateGiftUpvotedBy(birthday.id, gift.id, isUpvoted, token).then(revalidate)
   }
 
   const onDeleteGift = async (gift: GiftWithUpvotes) => {
@@ -148,7 +145,7 @@ const GiftPage = ({
       })
     }, false)
 
-    await Client.deleteGift(gift.id).then(revalidate);
+    await Client.deleteGift(gift.id, token).then(revalidate);
   }
 
   const onDeleteContributor = async (contributor: Contributor) => {
@@ -160,16 +157,11 @@ const GiftPage = ({
     mutate({
       ...birthday,
       contributors: birthday.contributors?.filter(c => {
-        return c.id !== contributor.id
+        return c.email !== contributor.email
       })
     }, false)
 
-
-    if (contributor.id === myContributorId) {
-      setMyContributorId(undefined);
-    }
-
-    await Client.deleteContributor(contributor.id).then(revalidate);
+    await Client.deleteContributorFromBirthday(birthday.id, contributor.email, token).then(revalidate);
   }
 
   const onShareClick = () => {
@@ -184,6 +176,11 @@ const GiftPage = ({
 
   return (
     <AuthenticatedRoute>
+      <Head>
+        <title>{birthday.person} birthday's gift - It's your birthday</title>
+        <meta name="title" content={`${birthday.person} birthday's gift - It's your birthday`} />
+        <meta name="description" content="Help choosing ${birthday.person}'s birthday gift at its-your-birthday.com" />
+      </Head>
       <Main pad={{ bottom: "100px" }}>
         <Box
           animation={"slideDown"}
@@ -219,45 +216,25 @@ const GiftPage = ({
                 placeholder="Link to the item"
                 onChange={e => setNewGift({ ...newGift, url: e.target.value })} value={newGift.url} />
             </FormField>
-            {!myContributorId ? (
-              <Text size="small" color="dark-3" margin={{ top: "medium" }}>
-                You need to add your name to suggest a gift
-              </Text>
-            ) : null}
-            <Button data-testid="add-gift" disabled={!myContributorId} margin={{ top: "small" }} onClick={onAddGiftClick}>Add</Button>
+            <Button data-testid="add-gift" margin={{ top: "small" }} onClick={onAddGiftClick}>Add</Button>
           </Box>
         </Collapsible>
         <GiftsList
           gifts={birthday?.gifts}
           onUpvoteChange={onUpvoteChange}
           onDelete={onDeleteGift}
-          collaboratorId={myContributorId}
+          userEmail={user?.email}
         />
         <ContributorsList
-          myContributorId={myContributorId}
+          userEmail={user?.email}
+          paidBy={birthday.paidBy}
           listRef={contributorsListRef} contributors={birthday?.contributors}
-          onThisIsMe={(contributor) => setMyContributorId(contributor.id)}
           onDelete={onDeleteContributor}
           onChange={onChangeContributors} />
-        {!myContributorId ? (
-          <Button color="accent-1" size="medium" margin={{ horizontal: 'small' }} onClick={() => onAddName(false, user?.name)}>
+        {!userOnList ? (
+          <Button color="accent-1" size="medium" margin={{ horizontal: 'small' }} onClick={() => onAddName(user?.email)}>
             Add me to the list
           </Button>
-        ) : null}
-        {showAddOtherPersonButton ? (
-          <Button
-            margin="small"
-            size="medium"
-            onClick={() => setIsAddingAnotherPerson(true)}>
-            Add another person
-          </Button>
-        ) : null}
-        {showAddPersonBox ? (
-          <AddPerson
-            name={name}
-            label={'Insert the name of the person'}
-            onChange={setName}
-            onSubmit={() => onAddName(isAddingAnotherPerson, name)} />
         ) : null}
       </Main >
     </AuthenticatedRoute>

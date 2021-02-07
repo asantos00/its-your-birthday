@@ -1,64 +1,55 @@
+import React from 'react';
 import { Box, Text, CheckBox, Header, Anchor } from "grommet";
 import { useMemo } from "react";
 import { Contributor } from "@prisma/client";
 import { Trash } from "grommet-icons";
-
 interface ContributorsListProps {
   contributors?: Contributor[]
-  myContributorId?: number;
-  onChange: (contributor: Contributor) => void
+  paidBy?: Contributor[]
+  userEmail?: string;
+  onChange: ({ hasPaid }: { hasPaid: boolean }) => void
   onDelete: (contributor: Contributor) => void
-  onThisIsMe: (contributor: Contributor) => void
   listRef?: any
 }
 
 const ContributorsList = ({
   contributors,
-  myContributorId,
+  paidBy,
+  userEmail,
   onChange,
-  onThisIsMe,
   onDelete,
   listRef
 }: ContributorsListProps) => {
-  if (!contributors?.length) {
-    return null;
-  }
-
-  const hasContributed = useMemo(() => contributors.filter(c => c.hasPaid), [contributors]);
-
+  const paidEmails = useMemo(() => paidBy?.map(p => p.email), [paidBy]);
   return (
     <>
       <Header background="dark-5" pad={{ horizontal: "large", vertical: "medium" }}>
         <Text color="dark-1">Name</Text>
-        <Text color="dark-1">Contributed ({hasContributed.length}/{contributors.length})</Text>
+        <Text color="dark-1">Contributed ({contributors?.length}/{paidBy?.length})</Text>
       </Header>
       <Box ref={listRef} pad="large">
-        {contributors.map(contributor => {
+        {contributors?.map(contributor => {
           return (
-            <Box key={contributor.id} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
+            <Box key={contributor.email} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
               <Box basis="70%" flex="grow" direction="row" align="center">
                 <Text
-                  color={myContributorId === contributor.id ? 'brand' : ''}
+                  color={userEmail === contributor.email ? 'brand' : ''}
                 >
                   {contributor.name}
                 </Text>
-                {!myContributorId && (
-                  <Text size="small" margin={{ horizontal: "small" }} onClick={() => onThisIsMe(contributor)}>
-                    <Anchor>
-                      This is me
-                  </Anchor>
-                  </Text>)
-                }
               </Box>
-              <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
-                <Trash data-testid={`delete-${contributor.name}`} color="dark-4" onClick={() => onDelete(contributor)} />
-              </Box>
+              {contributor.email === userEmail ? (
+                <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
+                  <Trash data-testid={`delete-${contributor.name}`} color="dark-4" onClick={() => onDelete(contributor)} />
+                </Box>
+              ) : null}
               <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
                 <CheckBox
                   data-testid={`checkbox-${contributor.name}`}
-                  checked={contributor.hasPaid}
+                  checked={paidEmails?.includes(contributor.email)}
+                  disabled={contributor.email !== userEmail}
                   onChange={(e) => {
-                    onChange({ ...contributor, hasPaid: e.target.checked });
+                    onChange({ hasPaid: e.target.checked });
                   }} />
               </Box>
             </Box>

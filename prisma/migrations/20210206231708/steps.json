@@ -30,52 +30,20 @@
     {
       "tag": "CreateField",
       "model": "Contributor",
-      "field": "id",
-      "type": "Int",
-      "arity": "Required"
-    },
-    {
-      "tag": "CreateDirective",
-      "location": {
-        "path": {
-          "tag": "Field",
-          "model": "Contributor",
-          "field": "id"
-        },
-        "directive": "default"
-      }
-    },
-    {
-      "tag": "CreateArgument",
-      "location": {
-        "tag": "Directive",
-        "path": {
-          "tag": "Field",
-          "model": "Contributor",
-          "field": "id"
-        },
-        "directive": "default"
-      },
-      "argument": "",
-      "value": "autoincrement()"
-    },
-    {
-      "tag": "CreateDirective",
-      "location": {
-        "path": {
-          "tag": "Field",
-          "model": "Contributor",
-          "field": "id"
-        },
-        "directive": "id"
-      }
-    },
-    {
-      "tag": "CreateField",
-      "model": "Contributor",
       "field": "email",
       "type": "String",
       "arity": "Required"
+    },
+    {
+      "tag": "CreateDirective",
+      "location": {
+        "path": {
+          "tag": "Field",
+          "model": "Contributor",
+          "field": "email"
+        },
+        "directive": "id"
+      }
     },
     {
       "tag": "CreateField",
@@ -284,6 +252,17 @@
           "model": "Gift",
           "field": "id"
         },
+        "directive": "id"
+      }
+    },
+    {
+      "tag": "CreateDirective",
+      "location": {
+        "path": {
+          "tag": "Field",
+          "model": "Gift",
+          "field": "id"
+        },
         "directive": "default"
       }
     },
@@ -300,17 +279,6 @@
       },
       "argument": "",
       "value": "autoincrement()"
-    },
-    {
-      "tag": "CreateDirective",
-      "location": {
-        "path": {
-          "tag": "Field",
-          "model": "Gift",
-          "field": "id"
-        },
-        "directive": "id"
-      }
     },
     {
       "tag": "CreateField",
@@ -423,7 +391,7 @@
         "directive": "relation"
       },
       "argument": "fields",
-      "value": "[authorId]"
+      "value": "[authorEmail]"
     },
     {
       "tag": "CreateArgument",
@@ -437,13 +405,13 @@
         "directive": "relation"
       },
       "argument": "references",
-      "value": "[id]"
+      "value": "[email]"
     },
     {
       "tag": "CreateField",
       "model": "Gift",
-      "field": "authorId",
-      "type": "Int",
+      "field": "authorEmail",
+      "type": "String",
       "arity": "Optional"
     },
     {
@@ -497,6 +465,17 @@
           "model": "Birthday",
           "field": "id"
         },
+        "directive": "id"
+      }
+    },
+    {
+      "tag": "CreateDirective",
+      "location": {
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "id"
+        },
         "directive": "default"
       }
     },
@@ -513,17 +492,6 @@
       },
       "argument": "",
       "value": "uuid()"
-    },
-    {
-      "tag": "CreateDirective",
-      "location": {
-        "path": {
-          "tag": "Field",
-          "model": "Birthday",
-          "field": "id"
-        },
-        "directive": "id"
-      }
     },
     {
       "tag": "CreateField",

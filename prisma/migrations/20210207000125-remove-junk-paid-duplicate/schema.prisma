@@ -3,7 +3,7 @@
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url = "***"
 }
 
 generator client {
@@ -18,7 +18,7 @@ model Contributor {
   suggestedGifs Gift[]     @relation("giftSuggestor")
   upvotes       Gift[]     @relation("upvotedBy")
   createdAt     DateTime   @default(now())
-  paid          Birthday[] @relation("paidBy")
+  paid          Gift[]     @relation("paidBy")
 }
 
 model Gift {
@@ -30,6 +30,7 @@ model Gift {
   suggestor   Contributor?  @relation(name: "giftSuggestor", fields: [authorEmail], references: [email])
   authorEmail String?
   upvotedBy   Contributor[] @relation("upvotedBy")
+  paidBy      Contributor[] @relation("paidBy")
 }
 
 model Birthday {
@@ -39,5 +40,4 @@ model Birthday {
   person       String
   gifts        Gift[]
   contributors Contributor[] @relation
-  paidBy       Contributor[] @relation("paidBy")
 }

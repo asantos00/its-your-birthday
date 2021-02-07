@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 import { authorizedRoute, NextAuthenticatedRequest } from "../../auth";
 
 const prisma = new PrismaClient();
@@ -7,48 +7,58 @@ const prisma = new PrismaClient();
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '1mb',
+      sizeLimit: "1mb",
     },
   },
-}
+};
 
 async function handler(req: NextAuthenticatedRequest, res: NextApiResponse) {
-  if (req.method === 'POST') {
-    return await authorizedRoute(post)(req, res);
+  if (req.method === "PATCH") {
+    return await authorizedRoute(patch)(req, res);
   }
 
-  return await authorizedRoute(patch)(req, res);
+  if (req.method === "DELETE") {
+    return await authorizedRoute(remove)(req, res);
+  }
+
+  res.status(404);
 }
 
 async function patch(req: NextAuthenticatedRequest, res: NextApiResponse) {
-  const birthday = await prisma.birthday.update({
-    where: { id: req.query.id as string },
-    data: {
-      contributors: {
-        set: [req.body]
-      }
-    }
+  const birthday = await prisma.contributor.upsert({
+    where: { email: req.user.email },
+    create: {
+      Birthday: {
+        connect: { id: req.query.id as string },
+      },
+      name: req.user.name,
+      email: req.user.email,
+    },
+    update: {
+      Birthday: {
+        connect: { id: req.query.id as string },
+      },
+    },
   });
 
-  res.json(birthday)
+  res.json(birthday);
 
-  await prisma.disconnect()
+  await prisma.disconnect();
 }
 
-async function post(req: NextAuthenticatedRequest, res: NextApiResponse) {
-  const birthday = await prisma.contributor.create({
+async function remove(req: NextAuthenticatedRequest, res: NextApiResponse) {
+  const birthday = await prisma.contributor.update({
+    where: { email: req.user.email },
     data: {
       Birthday: {
-        connect: { id: req.query.id as string }
+        disconnect: { id: req.query.id as string },
       },
-      name: req.body.name,
-      email: req.user.email
-    }
-  })
+    },
+  });
 
-  res.json(birthday)
+  res.json(birthday);
 
-  await prisma.disconnect()
+  await prisma.disconnect();
 }
 
-export default handler
+export default handler;

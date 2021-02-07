@@ -1,0 +1,48 @@
+{
+  "version": "0.3.14-fixed",
+  "steps": [
+    {
+      "tag": "UpdateField",
+      "model": "Contributor",
+      "field": "paid",
+      "type": "Birthday"
+    },
+    {
+      "tag": "DeleteField",
+      "model": "Gift",
+      "field": "paidBy"
+    },
+    {
+      "tag": "CreateField",
+      "model": "Birthday",
+      "field": "paidBy",
+      "type": "Contributor",
+      "arity": "List"
+    },
+    {
+      "tag": "CreateDirective",
+      "location": {
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "paidBy"
+        },
+        "directive": "relation"
+      }
+    },
+    {
+      "tag": "CreateArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "paidBy"
+        },
+        "directive": "relation"
+      },
+      "argument": "",
+      "value": "\"paidBy\""
+    }
+  ]
+}

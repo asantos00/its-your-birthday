@@ -7,10 +7,14 @@ import {
   FormField,
   Image,
   Button,
+  Anchor,
+
 } from "grommet";
 import Router from "next/router";
 import { useState, useCallback } from "react";
+import useSWR from "swr";
 import { useAuthentication } from '../hooks/useAuthentication';
+import { authenticatedFetcher } from '../client';
 
 enum Status {
   IDLE = 'idle',
@@ -21,7 +25,13 @@ enum Status {
 export default function Home() {
   const [name, setName] = useState("");
   const [requestStatus, setRequestStatus] = useState<Status>(Status.IDLE);
-  const { token, login, isAuthenticated } = useAuthentication();
+  const { token, login, logout, user, isAuthenticated } = useAuthentication();
+  const { data: userBirthdays, error } = useSWR(
+    token ? [`/api/birthdays?user=${user.email}`, token] : null,
+    authenticatedFetcher
+  );
+  const userBirthdaysLoading = !userBirthdays && !error;
+  const firstName = user?.name?.split(' ')[0];
   const createBirthday = useCallback(async () => {
     setRequestStatus(Status.LOADING)
     const birthday = await fetch('/api/birthdays', {
@@ -51,41 +61,72 @@ export default function Home() {
       <Box pad="large">
         <Image src="/assets/gift.png" height="72px" margin="0 auto" />
       </Box>
-      <Box margin={{ bottom: "large" }}>
-        <Heading level="2">Welcome</Heading>
-        <Text color="dark-3">Let's start by creating birthday gift poll</Text>
-      </Box>
       <Box>
-        {isLoading ? (
-          <Text>Creating...</Text>
-        ) : (
-            <>
-              <FormField label="Birthday person">
-                <TextInput
-                  placeholder="Name of the person"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </FormField>
-              {isAuthenticated ? (
-                <Button
-                  onClick={createBirthday}
-                  margin={{ top: "medium" }}
-                  size="medium"
-                  label="Hurray!"
-                />
-              ) : (
-                  <Button
-                    onClick={() => login()}
-                    margin={{ top: "medium" }}
-                    color="accent-1"
-                    size="medium"
-                    label="Login"
-                  />
-                )}
-            </>
-          )}
+        <Heading level="2">Welcome {firstName}</Heading>
+        {isAuthenticated && userBirthdays ? (
+          <Box margin={{ bottom: "large" }}>
+            <Heading level="3">Gift groups you're part of</Heading>
+            { userBirthdaysLoading ? <Text>Loading...</Text> : null}
+            { userBirthdays.birthdays.map(birthday => {
+              return (
+                <Box key={birthday.id} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
+                  <Box basis="70%" flex="grow" direction="row" align="center">
+                    <Text
+                      color={'brand'}
+                    >
+                      <Anchor href={`/birthday/${birthday.id}`}><Text>{birthday.person}'s gift</Text></Anchor>
+                    </Text>
+                  </Box>
+                </Box>
+              )
+            })}
+          </Box>
+        ) : null}
+        <Box margin={{ bottom: "large" }}>
+          <Heading level="3">Create a new gift group</Heading>
+          {isLoading ? (
+            <Text>Creating...</Text>
+          ) : (
+              <>
+                {isAuthenticated ? (
+                  <>
+                    <FormField label="Birthday person">
+                      <TextInput
+                        placeholder="Name of the person"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                    </FormField>
+                    <Button
+                      onClick={createBirthday}
+                      margin={{ top: "medium" }}
+                      size="medium"
+                      label="Hurray!"
+                    />
+                  </>
+                ) : (
+                    <Button
+                      onClick={() => login()}
+                      margin={{ top: "medium" }}
+                      color="accent-1"
+                      size="medium"
+                      label="Login"
+                    />
+                  )}
+              </>
+            )}
+        </Box>
       </Box>
+      {isAuthenticated ? (
+        <Box justify="end" margin={{ top: 'large' }}>
+          <Button
+            onClick={() => logout()}
+            color="accent-1"
+            size="medium"
+            label="Logout"
+          />
+        </Box>
+      ) : null}
     </Main>
   );
 }

@@ -1,3 +1,7 @@
 # Prisma Migrate lockfile v1
 
-20200628191304-add-uuid-as-birthday-id
+20210206230729-add-contributorid-as-email
+20210206231708
+20210206233921-change-birthdays-and-paids
+20210207000125-remove-junk-paid-duplicate
+20210207002428-add-paid-to-contributor

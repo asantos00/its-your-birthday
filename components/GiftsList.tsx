@@ -7,9 +7,9 @@ export interface GiftWithUpvotes extends Gift {
   suggestor?: Contributor
 }
 
-const GiftsList = ({ gifts, onDelete, collaboratorId, onUpvoteChange }: {
+const GiftsList = ({ gifts, onDelete, userEmail, onUpvoteChange }: {
   gifts?: GiftWithUpvotes[],
-  collaboratorId?: number,
+  userEmail?: string,
   onUpvoteChange: (gift: GiftWithUpvotes, isUpvoted: boolean) => void
   onDelete: (gift: GiftWithUpvotes) => void
 }) => {
@@ -18,7 +18,7 @@ const GiftsList = ({ gifts, onDelete, collaboratorId, onUpvoteChange }: {
   }
 
   const collaboratorUpvotedGift = (upvotedBy: Contributor[]) => {
-    return upvotedBy?.some(c => c.id === collaboratorId)
+    return upvotedBy?.some(c => c.email === userEmail)
   }
 
   return (
@@ -29,20 +29,20 @@ const GiftsList = ({ gifts, onDelete, collaboratorId, onUpvoteChange }: {
       </Header>
       <Box pad="large">
         {gifts.map((gift) => {
-          const canUpvote = collaboratorId && gift.id;
+          const canUpvote = userEmail && gift.id;
           const isLoading = !gift.id;
-          const isOwner = gift.suggestor?.id === collaboratorId;
+          const isOwner = gift.suggestor?.email === userEmail;
           return (
             <Box key={gift.id || "creating"} direction="row" margin={{ vertical: "small" }} fill="horizontal" flex="shrink">
               <Box basis="50%" flex="grow">
                 <Anchor target="_blank" href={gift.url}><Text>{gift.description}</Text></Anchor>
               </Box>
-              <Text data-testid={`count-${gift.description}`}>({gift.upvotedBy?.length})</Text>
               {isOwner ? (
                 <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
                   <Trash data-testid={`delete-${gift.description}`} color="dark-4" onClick={() => onDelete(gift)} />
                 </Box>
               ) : null}
+              <Text data-testid={`count-${gift.description}`}>({gift.upvotedBy?.length})</Text>
               <Box basis="5%" margin={{ horizontal: "medium" }} justify="center">
                 {canUpvote ? (
                   <Like
@@ -58,7 +58,7 @@ const GiftsList = ({ gifts, onDelete, collaboratorId, onUpvoteChange }: {
             </Box>
           )
         })}
-        {!collaboratorId && (<Text color="dark-4" margin={{ top: "medium" }} size="xsmall">
+        {!userEmail && (<Text color="dark-4" margin={{ top: "medium" }} size="xsmall">
           You need to add your name to the contributors list to upvote
         </Text>)}
       </Box>

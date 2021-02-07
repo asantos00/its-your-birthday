@@ -1,0 +1,249 @@
+{
+  "version": "0.3.14-fixed",
+  "steps": [
+    {
+      "tag": "CreateField",
+      "model": "Contributor",
+      "field": "paidBirthdays",
+      "type": "Birthday",
+      "arity": "List"
+    },
+    {
+      "tag": "CreateDirective",
+      "location": {
+        "path": {
+          "tag": "Field",
+          "model": "Contributor",
+          "field": "paidBirthdays"
+        },
+        "directive": "relation"
+      }
+    },
+    {
+      "tag": "CreateArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Contributor",
+          "field": "paidBirthdays"
+        },
+        "directive": "relation"
+      },
+      "argument": "",
+      "value": "\"paidBirthdays\""
+    },
+    {
+      "tag": "CreateField",
+      "model": "Contributor",
+      "field": "paid",
+      "type": "Gift",
+      "arity": "List"
+    },
+    {
+      "tag": "CreateDirective",
+      "location": {
+        "path": {
+          "tag": "Field",
+          "model": "Contributor",
+          "field": "paid"
+        },
+        "directive": "relation"
+      }
+    },
+    {
+      "tag": "CreateArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Contributor",
+          "field": "paid"
+        },
+        "directive": "relation"
+      },
+      "argument": "",
+      "value": "\"paidBy\""
+    },
+    {
+      "tag": "DeleteField",
+      "model": "Contributor",
+      "field": "hasPaid"
+    },
+    {
+      "tag": "DeleteField",
+      "model": "Contributor",
+      "field": "birthdayId"
+    },
+    {
+      "tag": "UpdateField",
+      "model": "Contributor",
+      "field": "Birthday",
+      "arity": "List"
+    },
+    {
+      "tag": "DeleteArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Contributor",
+          "field": "Birthday"
+        },
+        "directive": "relation"
+      },
+      "argument": "fields"
+    },
+    {
+      "tag": "DeleteArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Contributor",
+          "field": "Birthday"
+        },
+        "directive": "relation"
+      },
+      "argument": "references"
+    },
+    {
+      "tag": "CreateField",
+      "model": "Gift",
+      "field": "paidBy",
+      "type": "Contributor",
+      "arity": "List"
+    },
+    {
+      "tag": "CreateDirective",
+      "location": {
+        "path": {
+          "tag": "Field",
+          "model": "Gift",
+          "field": "paidBy"
+        },
+        "directive": "relation"
+      }
+    },
+    {
+      "tag": "CreateArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Gift",
+          "field": "paidBy"
+        },
+        "directive": "relation"
+      },
+      "argument": "",
+      "value": "\"paidBy\""
+    },
+    {
+      "tag": "CreateField",
+      "model": "Birthday",
+      "field": "contributorEmail",
+      "type": "String",
+      "arity": "Optional"
+    },
+    {
+      "tag": "CreateField",
+      "model": "Birthday",
+      "field": "Contributor",
+      "type": "Contributor",
+      "arity": "Optional"
+    },
+    {
+      "tag": "CreateDirective",
+      "location": {
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "Contributor"
+        },
+        "directive": "relation"
+      }
+    },
+    {
+      "tag": "CreateArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "Contributor"
+        },
+        "directive": "relation"
+      },
+      "argument": "",
+      "value": "\"paidBirthdays\""
+    },
+    {
+      "tag": "CreateArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "Contributor"
+        },
+        "directive": "relation"
+      },
+      "argument": "fields",
+      "value": "[contributorEmail]"
+    },
+    {
+      "tag": "CreateArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "Contributor"
+        },
+        "directive": "relation"
+      },
+      "argument": "references",
+      "value": "[email]"
+    },
+    {
+      "tag": "CreateDirective",
+      "location": {
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "contributors"
+        },
+        "directive": "relation"
+      }
+    },
+    {
+      "tag": "CreateArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "contributors"
+        },
+        "directive": "relation"
+      },
+      "argument": "fields",
+      "value": "[contributorEmail]"
+    },
+    {
+      "tag": "CreateArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "contributors"
+        },
+        "directive": "relation"
+      },
+      "argument": "references",
+      "value": "[email]"
+    }
+  ]
+}

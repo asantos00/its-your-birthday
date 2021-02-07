@@ -1,0 +1,46 @@
+{
+  "version": "0.3.14-fixed",
+  "steps": [
+    {
+      "tag": "DeleteField",
+      "model": "Contributor",
+      "field": "paidBirthdays"
+    },
+    {
+      "tag": "DeleteField",
+      "model": "Birthday",
+      "field": "contributorEmail"
+    },
+    {
+      "tag": "DeleteField",
+      "model": "Birthday",
+      "field": "Contributor"
+    },
+    {
+      "tag": "DeleteArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "contributors"
+        },
+        "directive": "relation"
+      },
+      "argument": "fields"
+    },
+    {
+      "tag": "DeleteArgument",
+      "location": {
+        "tag": "Directive",
+        "path": {
+          "tag": "Field",
+          "model": "Birthday",
+          "field": "contributors"
+        },
+        "directive": "relation"
+      },
+      "argument": "references"
+    }
+  ]
+}
