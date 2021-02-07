@@ -8,6 +8,9 @@
     "start": "next start",
     "generate-prisma": "prisma generate"
   },
+  "engines": {
+    "node": "12.x"
+  },
   "dependencies": {
     "@auth0/auth0-react": "^1.0.0",
     "@prisma/client": "^2.1.3",
